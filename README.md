@@ -67,6 +67,12 @@ Cómo funciona: la clave de Groq vive **solo en el servidor** (`/etc/appcomidas/
 
 Para cambiar la clave: vuelve a correr en el VPS el comando que guarda `/etc/appcomidas/ia.env` y luego `systemctl restart appcomidas-ia`.
 
+## Notificaciones push (avisos de comida)
+
+En Ajustes → Avisos de comida se activa una notificación a la hora de cada comida con el platillo que toca ("🍲 Comida de hoy: Tinga de pollo"). Cada comida tiene su hora (de fábrica 07:30, 12:30 y 19:00) y se puede dejar vacía. Funciona en Android (con la APK o desde Chrome) y en iPhone con la app agregada a inicio (iOS 16.4 o más nuevo).
+
+Cómo funciona: es Web Push estándar con llaves VAPID (sin Firebase ni cuentas). El celular se suscribe y sube al servidor sus horas, su zona horaria y los nombres de los platillos de los próximos 8 días; cada vez que cambia el plan se vuelve a subir. El servicio `appcomidas-ia` guarda las suscripciones en `/var/lib/appcomidas/suscripciones.json`, revisa cada minuto a quién le toca aviso y lo manda; las suscripciones vencidas se borran solas. Las llaves viven en `/etc/appcomidas/push.env` (las genera `subir-al-vps.sh` la primera vez; si se cambian, todos los celulares tienen que volver a activar los avisos). En la APK, la librería TWA entrega las notificaciones a la app (`DelegationService`) y pide el permiso de Android 13+.
+
 ## Porciones
 
 Las cantidades de cada receta son para **1 adulto**. De fábrica, cada niño cuenta como el 60 % de un adulto; en Ajustes puedes elegir entre 40 % y 100 %, y hacer la porción de adulto ligera o abundante. Todo se redondea hacia arriba a cantidades que se pueden comprar (huevos enteros, ½ aguacate, gramos de 10 en 10). La lista de compras suma todas las comidas antes de redondear.
