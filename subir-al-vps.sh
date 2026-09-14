@@ -11,7 +11,7 @@ rsync -rltv --delete \
   --exclude '.git' --exclude '.claude' --exclude 'android' --exclude 'tests' --exclude '.github' \
   --exclude 'node_modules' --exclude 'ia' --exclude 'server.js' --exclude 'package.json' --exclude 'README.md' \
   --exclude 'Iniciar app.command' --exclude 'subir-al-vps.sh' --exclude '.gitignore' --exclude '.DS_Store' \
-  --exclude '*.apk' \
+  --exclude '*.apk' --exclude 'version.json' \
   ./ "$DESTINO"
 
 ssh pinchis 'chown -R www-data:www-data /var/www/pinchis/proyectos/appcomidas'

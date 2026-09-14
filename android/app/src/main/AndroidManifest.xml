@@ -31,7 +31,7 @@
         <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
 
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:name=".LauncherActivity"
             android:alwaysRetainTaskState="true"
             android:label="@string/app_name"
             android:exported="true">
@@ -50,11 +50,6 @@
             <meta-data android:name="android.support.customtabs.trusted.DISPLAY_MODE" android:value="standalone" />
             <meta-data android:name="android.support.customtabs.trusted.SCREEN_ORIENTATION" android:value="portrait" />
 
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
             <!-- Los enlaces a la app abren dentro de la app -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -63,6 +58,19 @@
                 <data android:scheme="https" android:host="@string/host_name" android:pathPrefix="/proyectos/appcomidas" />
             </intent-filter>
         </activity>
+
+        <!-- Nombre que tenía la actividad de arranque en las versiones 0.1.x: se conserva como alias
+             para que el ícono ya puesto en la pantalla de inicio siga abriendo la app tras actualizar. -->
+        <activity-alias
+            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:targetActivity=".LauncherActivity"
+            android:label="@string/app_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- OBLIGATORIA: LauncherActivity la habilita/deshabilita al arrancar; si no está declarada,
              la app truena con "Component class ManageDataLauncherActivity does not exist"

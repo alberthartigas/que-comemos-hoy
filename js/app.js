@@ -1,5 +1,6 @@
 // Arranque: rutas por hash, pintado de vistas y eventos delegados.
 
+import { registrarVersionInstalada } from './actualizaciones.js';
 import { claveFecha } from './fechas.js';
 import { tipoSegunHora } from './horarios.js';
 import { ICONOS } from './iconos.js';
@@ -110,6 +111,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) revisarHora();
 });
 
+registrarVersionInstalada();
 for (const enlace of document.querySelectorAll('.tabbar a')) {
   enlace.insertAdjacentHTML('afterbegin', ICONO_PESTANA[enlace.dataset.pestana]);
 }

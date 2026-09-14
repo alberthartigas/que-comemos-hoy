@@ -1,5 +1,6 @@
 // Familia, horarios, cómo abrirla en el celular y respaldo de datos.
 
+import { actualizacionDisponible, enApk, ultimaRelease, versionInstalada } from '../actualizaciones.js';
 import { claveFecha } from '../fechas.js';
 import { HORARIOS_DEFECTO, INFO_TIPO, TIPOS } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
@@ -121,7 +122,13 @@ export function render({ estado }) {
       <button class="btn btn--peligro btn--bloque" type="button" data-accion="borrar">Borrar todo y empezar de cero</button>
     </section>
 
-    <p class="pie">¿Qué comemos hoy? · versión de prueba 0.1</p>`;
+    ${enApk() ? `<section class="tarjeta">
+      <h2>📲 Versión de la app</h2>
+      <p class="nota">Instalada: <strong>0.1.${versionInstalada()}</strong>. La app busca sola versiones nuevas cada 6 horas y te avisa en la pantalla de inicio.</p>
+      <button class="btn btn--bloque" type="button" data-accion="buscar-actualizacion">Buscar actualización ahora</button>
+    </section>` : ''}
+
+    <p class="pie">¿Qué comemos hoy? · ${enApk() ? `app 0.1.${versionInstalada()}` : 'versión web'}</p>`;
 }
 
 function notaAvisos() {
@@ -151,6 +158,21 @@ export const acciones = {
       toast('Aviso enviado: debe llegar en unos segundos');
     } catch (error) {
       toast(error.message);
+    }
+  },
+  async 'buscar-actualizacion'(boton, ctx) {
+    boton.disabled = true;
+    boton.textContent = 'Buscando…';
+    try {
+      const release = await actualizacionDisponible({ forzar: true, respetarPospuesta: false });
+      if (release) {
+        toast(`Hay una versión nueva: ${release.version}. Ve a Hoy para actualizar.`);
+      } else {
+        const ultima = await ultimaRelease();
+        toast(ultima ? `Ya tienes la versión más reciente (${ultima.version})` : 'No se pudo consultar; revisa tu internet.');
+      }
+    } finally {
+      ctx.repintar();
     }
   },
   exportar() {

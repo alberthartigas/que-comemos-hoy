@@ -231,3 +231,10 @@ test('push: hora local, avisos pendientes y saneado de suscripciones', async () 
   assert.deepEqual(limpia.plan, { '2026-09-14': { comida: 'Tinga' } });
   assert.equal(sanearSuscripcion({ suscripcion: { endpoint: 'http://inseguro', keys: { p256dh: 'a', auth: 'b' } } }), null);
 });
+
+test('actualizaciones: código de versión a partir de la etiqueta de la release', async () => {
+  const { codigoDeEtiqueta } = await import('../js/actualizaciones.js');
+  assert.equal(codigoDeEtiqueta('v0.1.12'), 12);
+  assert.equal(codigoDeEtiqueta('0.2.3'), 3);
+  assert.equal(codigoDeEtiqueta('rara'), 0);
+});
