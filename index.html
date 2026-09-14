@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Sugerencias al azar de desayuno, comida y cena, con ingredientes por persona y video de TikTok.">
-  <meta name="theme-color" content="#fff7ef" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#14100d" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#fff7ef">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,9 +13,21 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <script>
+    // Tema elegido por la persona (claro/oscuro); se aplica antes del CSS para que no parpadee.
+    try { var t = localStorage.getItem('que-comemos-hoy:tema'); if (t === 'claro' || t === 'oscuro') document.documentElement.dataset.tema = t; } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <header class="marca">
+    <a class="marca__logo" href="#/hoy" aria-label="Que Comemos, ir al inicio">
+      <span class="marca__arbol" role="img" aria-hidden="true"></span>
+      <span class="marca__letras" role="img" aria-hidden="true"></span>
+      <span class="marca__texto">Que Comemos?</span>
+    </a>
+    <button id="tema" class="tema-boton" type="button" aria-label="Cambiar a modo oscuro"></button>
+  </header>
   <main id="vista" class="vista" tabindex="-1"></main>
 
   <nav class="tabbar" aria-label="Secciones">

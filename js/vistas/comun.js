@@ -2,7 +2,7 @@
 
 import { INFO_TIPO } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
-import { obtenerEstado, otraOpcion } from '../store.js';
+import { alternarFavorita, obtenerEstado, otraOpcion } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
 
@@ -55,6 +55,34 @@ export function filaSlot({ receta, fecha, tipo, pasada = false }) {
     </a>
     ${pasada ? '' : `<button class="btn btn--icono" type="button" data-accion="otra" data-fecha="${fecha}" data-tipo="${tipo}" aria-label="Otra opción de ${info.nombre.toLowerCase()}">${ICONOS.aleatorio}</button>`}
   </div>`;
+}
+
+/** Lista compacta de recetas con corazón para marcar favoritas. */
+export function listaMini(recetas) {
+  return `<ul class="lista-recetas lista-recetas--mini">${recetas.map((r) => `<li>
+    <div class="receta-item${r.activa ? '' : ' receta-item--inactiva'}">
+      <a class="receta-item__enlace" href="#/receta/${encodeURIComponent(r.id)}">
+        <span class="emoji-caja">${esc(r.emoji)}</span>
+        <span class="receta-item__texto">
+          <strong>${esc(r.nombre)}</strong>
+          <small>${r.tipos.map((t) => INFO_TIPO[t].nombre).join(' · ')}${r.minutos ? ` · ${r.minutos} min` : ''}${r.activa ? '' : ' · pausada'}</small>
+        </span>
+      </a>
+      ${botonFavorita(r)}
+    </div>
+  </li>`).join('')}</ul>`;
+}
+
+export function botonFavorita(receta) {
+  return `<button class="btn btn--icono${receta.favorita ? ' activo' : ''}" type="button" data-accion="favorita" data-id="${esc(receta.id)}" aria-pressed="${receta.favorita}" aria-label="${receta.favorita ? 'Quitar de favoritas' : 'Marcar como favorita'}">${ICONOS.corazon}</button>`;
+}
+
+/** Acción compartida: alterna la favorita del botón (data-id). */
+export function accionFavorita(boton) {
+  const receta = obtenerEstado().recetas.find((r) => r.id === boton.dataset.id);
+  if (!receta) return;
+  alternarFavorita(receta.id);
+  toast(receta.favorita ? 'Quitada de favoritas' : '❤️ Favorita: el sorteo te dará más de este estilo');
 }
 
 export function stepperPersonas(campo, etiqueta, valor, minimo) {

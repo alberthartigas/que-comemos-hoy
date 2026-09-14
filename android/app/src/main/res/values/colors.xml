@@ -3,6 +3,6 @@
     <color name="status_bar">#FFF7EF</color>
     <color name="navigation_bar">#FFF7EF</color>
     <color name="navigation_bar_dark">#14100D</color>
-    <color name="splash_background">#FFF7EF</color>
-    <color name="ic_launcher_background">#E0603A</color>
+    <color name="splash_background">#000000</color>
+    <color name="ic_launcher_background">#000000</color>
 </resources>

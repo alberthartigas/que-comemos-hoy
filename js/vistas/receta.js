@@ -4,10 +4,11 @@ import { claveFecha, fechaLarga } from '../fechas.js';
 import { INFO_TIPO } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { escalarIngredientes, porcionesTotales } from '../porciones.js';
-import { alternarActiva, alternarFavorita, usarRecetaEn } from '../store.js';
+import { recetasParecidas } from '../similares.js';
+import { alternarActiva, usarRecetaEn } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { autorTikTok, esc, toast } from '../util.js';
-import { regresar, stepperPersonas } from './comun.js';
+import { accionFavorita, botonFavorita, listaMini, regresar, stepperPersonas } from './comun.js';
 
 // Adultos y niños solo para esta receta (no cambia los ajustes de la casa).
 let personas = null;
@@ -40,12 +41,13 @@ export function render(ctx) {
   const gente = personasPara(receta, ajustes);
   const porciones = porcionesTotales({ ...ajustes, adultos: gente.adultos, ninos: gente.ninos });
   const autor = autorTikTok(receta.tiktok);
+  const parecidas = recetasParecidas(receta, ctx.estado.recetas);
 
   return `
     <div class="barra-superior">
       <button class="btn btn--icono" type="button" data-accion="volver" aria-label="Regresar">${ICONOS.atras}</button>
       <div>
-        <button class="btn btn--icono${receta.favorita ? ' activo' : ''}" type="button" data-accion="favorita" aria-pressed="${receta.favorita}" aria-label="Marcar como favorita">${ICONOS.corazon}</button>
+        ${botonFavorita(receta)}
         <a class="btn btn--icono" href="#/editar/${encodeURIComponent(receta.id)}" aria-label="Editar receta">${ICONOS.lapiz}</a>
       </div>
     </div>
@@ -94,6 +96,12 @@ export function render(ctx) {
       ${receta.tip ? `<p class="tip">💡 ${esc(receta.tip)}</p>` : ''}
     </section>
 
+    ${parecidas.length ? `<section class="tarjeta">
+      <h2>✨ Parecidas a esta</h2>
+      <p class="nota">Del mismo estilo, por sus ingredientes y etiquetas. Marca con ❤️ las que te gusten y el sorteo te dará más de ese estilo.</p>
+      ${listaMini(parecidas)}
+    </section>` : ''}
+
     <section class="tarjeta">
       <h2>📅 Cocinarla hoy</h2>
       <p class="nota">Ponla en el plan de hoy en lugar de la sugerencia:</p>
@@ -118,7 +126,7 @@ function cambiarPersonas(campo, cambio, ctx) {
 
 export const acciones = {
   volver: (_boton, ctx) => regresar(ctx, '#/recetas'),
-  favorita: (_boton, ctx) => alternarFavorita(ctx.args[0]),
+  favorita: accionFavorita,
   mas: (boton, ctx) => cambiarPersonas(boton.dataset.campo, 1, ctx),
   menos: (boton, ctx) => cambiarPersonas(boton.dataset.campo, -1, ctx),
   usar(boton, ctx) {

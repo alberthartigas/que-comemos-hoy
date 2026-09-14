@@ -4,6 +4,7 @@ import { claveFecha } from './fechas.js';
 import { tipoSegunHora } from './horarios.js';
 import { ICONOS } from './iconos.js';
 import { errorDeGuardado, obtenerEstado, suscribir } from './store.js';
+import { alCambiarTema, alternarTema, aplicarTema, temaEfectivo } from './tema.js';
 import { toast } from './util.js';
 import * as ajustes from './vistas/ajustes.js';
 import * as compras from './vistas/compras.js';
@@ -111,6 +112,18 @@ document.addEventListener('visibilitychange', () => {
 for (const enlace of document.querySelectorAll('.tabbar a')) {
   enlace.insertAdjacentHTML('afterbegin', ICONO_PESTANA[enlace.dataset.pestana]);
 }
+// Interruptor de modo claro/oscuro (arriba a la derecha en todas las pantallas)
+const botonTema = document.getElementById('tema');
+function pintarBotonTema() {
+  const oscuro = temaEfectivo() === 'oscuro';
+  botonTema.innerHTML = oscuro ? ICONOS.sol : ICONOS.luna;
+  botonTema.setAttribute('aria-label', oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  botonTema.title = botonTema.getAttribute('aria-label');
+}
+botonTema.addEventListener('click', alternarTema);
+alCambiarTema(pintarBotonTema);
+aplicarTema();
+
 window.addEventListener('hashchange', pintar);
 if (!location.hash) history.replaceState(null, '', '#/hoy');
 pintar();

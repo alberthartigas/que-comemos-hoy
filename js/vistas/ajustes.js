@@ -7,6 +7,7 @@ import { porcionesTotales } from '../porciones.js';
 import {
   actualizarAjustes, borrarTodo, exportarDatos, importarDatos, restaurarRecetasBase, volverASortearSemana,
 } from '../store.js';
+import { TEMAS, guardarTema, temaGuardado } from '../tema.js';
 import { descargarArchivo, esc, textoPersonas, toast } from '../util.js';
 import { stepperPersonas } from './comun.js';
 
@@ -46,6 +47,7 @@ export function alMontar(_raiz, ctx) {
 
 export function render({ estado }) {
   const { ajustes } = estado;
+  const tema = temaGuardado();
   return `
     <header class="encabezado"><h1>Ajustes</h1></header>
 
@@ -64,6 +66,14 @@ export function render({ estado }) {
         <select class="entrada" data-cambio="factorNino">${opciones(PORCION_NINO, ajustes.factorNino)}</select>
       </label>
       <p class="tip">Para ${textoPersonas(ajustes)}, cada receta se calcula como <strong>${porcionesTotales(ajustes)} porciones</strong> de adulto.</p>
+    </section>
+
+    <section class="tarjeta">
+      <h2>🎨 Apariencia</h2>
+      <div class="opciones">
+        ${TEMAS.map((t) => `<label class="opcion"><input type="radio" name="tema" value="${t.id}" data-cambio="tema"${t.id === tema ? ' checked' : ''}><span>${t.id === 'claro' ? '☀️ ' : t.id === 'oscuro' ? '🌙 ' : ''}${t.nombre}</span></label>`).join('')}
+      </div>
+      <p class="nota">También puedes cambiarlo con el botón redondo de arriba a la derecha.</p>
     </section>
 
     <section class="tarjeta">
@@ -132,6 +142,7 @@ export const acciones = {
 };
 
 export const cambios = {
+  tema: (radio) => guardarTema(radio.value),
   factorAdulto: (select) => actualizarAjustes({ factorAdulto: Number(select.value) }),
   factorNino: (select) => actualizarAjustes({ factorNino: Number(select.value) }),
   horario(campo, { estado }) {

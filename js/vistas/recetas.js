@@ -3,7 +3,9 @@
 import { INFO_TIPO, TIPOS } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { normalizarTexto } from '../porciones.js';
+import { delEstiloDeFavoritas } from '../similares.js';
 import { esc } from '../util.js';
+import { accionFavorita, botonFavorita, listaMini } from './comun.js';
 
 const FILTROS = [
   { id: 'todas', nombre: 'Todas' },
@@ -27,6 +29,7 @@ export function render({ estado, params }) {
   const filtro = FILTROS.some((f) => f.id === params.get('filtro')) ? params.get('filtro') : 'todas';
   const lista = estado.recetas.filter((r) => pasaFiltro(r, filtro)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const enSorteo = estado.recetas.filter((r) => r.activa).length;
+  const estilo = filtro === 'favoritas' ? delEstiloDeFavoritas(estado.recetas) : [];
 
   return `
     <header class="encabezado">
@@ -42,20 +45,27 @@ export function render({ estado, params }) {
     </nav>
     <ul class="lista-recetas">
       ${lista.map((r) => `<li data-busqueda="${esc(normalizarTexto(`${r.nombre} ${r.ingredientes.map((i) => i.nombre).join(' ')}`))}">
-        <a class="receta-item${r.activa ? '' : ' receta-item--inactiva'}" href="#/receta/${encodeURIComponent(r.id)}">
-          <span class="emoji-caja">${esc(r.emoji)}</span>
-          <span class="receta-item__texto">
-            <strong>${esc(r.nombre)}</strong>
-            <small>${r.tipos.map((t) => INFO_TIPO[t].nombre).join(' · ')}${r.minutos ? ` · ${r.minutos} min` : ''}${r.activa ? '' : ' · pausada'}</small>
-          </span>
-          ${r.favorita ? `<span class="corazon" aria-label="Favorita">${ICONOS.corazon}</span>` : ''}
-        </a>
+        <div class="receta-item${r.activa ? '' : ' receta-item--inactiva'}">
+          <a class="receta-item__enlace" href="#/receta/${encodeURIComponent(r.id)}">
+            <span class="emoji-caja">${esc(r.emoji)}</span>
+            <span class="receta-item__texto">
+              <strong>${esc(r.nombre)}</strong>
+              <small>${r.tipos.map((t) => INFO_TIPO[t].nombre).join(' · ')}${r.minutos ? ` · ${r.minutos} min` : ''}${r.activa ? '' : ' · pausada'}</small>
+            </span>
+          </a>
+          ${botonFavorita(r)}
+        </div>
       </li>`).join('')}
     </ul>
     <div class="vacio" data-sin-resultados${lista.length ? ' hidden' : ''}>
-      <span class="vacio__emoji">🔎</span>
-      <p>No encontramos recetas aquí.</p>
+      <span class="vacio__emoji">${filtro === 'favoritas' ? '❤️' : '🔎'}</span>
+      <p>${filtro === 'favoritas' ? 'Aún no marcas favoritas. Toca el corazón de las recetas que más les gustan.' : 'No encontramos recetas aquí.'}</p>
     </div>
+    ${filtro === 'favoritas' && estilo.length ? `<section class="tarjeta">
+      <h2>✨ Del mismo estilo que tus favoritas</h2>
+      <p class="nota">Se parecen por ingredientes y etiquetas. El sorteo ya les da más chance; márcalas si también les gustan.</p>
+      ${listaMini(estilo)}
+    </section>` : ''}
     <a class="fab" href="#/nueva">${ICONOS.mas} Agregar comida</a>`;
 }
 
@@ -72,6 +82,8 @@ function filtrarLista(raiz) {
 export function alMontar(raiz) {
   if (consulta) filtrarLista(raiz);
 }
+
+export const acciones = { favorita: accionFavorita };
 
 export const entradas = {
   buscar(campo) {

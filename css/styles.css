@@ -31,8 +31,36 @@
   color-scheme: light;
 }
 
+/* Modo oscuro. Se aplica si el sistema está en oscuro (y la persona no eligió "claro")
+   o si la persona eligió "oscuro" con el interruptor. Los dos bloques deben ser IGUALES:
+   si cambias un color aquí, cámbialo también en el otro. */
+:root[data-tema="oscuro"] {
+    --fondo: #14100d;
+    --superficie: #201915;
+    --superficie-2: #2c231c;
+    --borde: #3d3128;
+    --texto: #f5ece4;
+    --texto-suave: #b8a697;
+    --primario: #ff7b4d;
+    --primario-texto: #1d0e07;
+    --primario-suave: #3d2418;
+    --verde: #5cc98f;
+    --verde-texto: #07140d;
+    --verde-suave: #1c3326;
+    --peligro: #ff8a80;
+    --desayuno: #f5b945;
+    --desayuno-suave: #3a2c12;
+    --comida: #ff9a73;
+    --comida-suave: #3d2418;
+    --cena: #a9a9ff;
+    --cena-suave: #26264a;
+    --tiktok: #f5f5f5;
+    --tiktok-texto: #111111;
+    --sombra: 0 1px 2px rgb(0 0 0 / 35%);
+    color-scheme: dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     --fondo: #14100d;
     --superficie: #201915;
     --superficie-2: #2c231c;
@@ -81,7 +109,7 @@ svg { width: 20px; height: 20px; flex: none; }
 .vista {
   max-width: 560px;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 20px) 16px calc(var(--alto-tabbar) + env(safe-area-inset-bottom) + 28px);
+  padding: 14px 16px calc(var(--alto-tabbar) + env(safe-area-inset-bottom) + 28px);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -222,6 +250,55 @@ a.chip { align-self: flex-start; }
 }
 .toast.visible { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---------- Barra de marca: logo + interruptor de modo claro/oscuro ---------- */
+
+.marca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
+}
+.marca__logo { display: flex; align-items: center; gap: 10px; color: var(--texto); min-height: 44px; }
+/* El árbol y las letras del logo son máscaras: toman el color del texto, así se ven
+   oscuros en modo claro y blancos en modo oscuro sin tener dos imágenes. */
+.marca__arbol,
+.marca__letras {
+  display: none;
+  background: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.marca__arbol { width: 26px; height: 38px; -webkit-mask-image: url(../icons/logo-blanco.png); mask-image: url(../icons/logo-blanco.png); }
+.marca__letras { width: 158px; height: 24px; -webkit-mask-image: url(../icons/letras-blanco.png); mask-image: url(../icons/letras-blanco.png); }
+.marca__texto { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+@supports (mask-image: url("")) or (-webkit-mask-image: url("")) {
+  .marca__arbol, .marca__letras { display: block; }
+  .marca__texto { display: none; }
+}
+
+.tema-boton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+  transition: transform 0.1s ease;
+}
+.tema-boton:active { transform: scale(0.92); }
+.tema-boton svg { width: 22px; height: 22px; }
+
 /* ---------- Hoy ---------- */
 
 .hero { overflow: hidden; border-radius: 28px; background: var(--superficie); box-shadow: var(--sombra); }
@@ -350,7 +427,9 @@ a.chip { align-self: flex-start; }
 .filtros a[aria-current="true"] { background: var(--texto); color: var(--fondo); }
 
 .lista-recetas { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0 0 72px; list-style: none; }
-.receta-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: 18px; background: var(--superficie); box-shadow: var(--sombra); }
+.receta-item { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border-radius: 18px; background: var(--superficie); box-shadow: var(--sombra); }
+.receta-item__enlace { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 2px 0; }
+.lista-recetas--mini { padding-bottom: 0; }
 .receta-item__texto { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .receta-item__texto strong { font-size: 16px; line-height: 1.25; }
 .receta-item__texto small { color: var(--texto-suave); font-size: 13px; }

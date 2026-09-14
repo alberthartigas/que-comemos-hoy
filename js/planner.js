@@ -3,6 +3,7 @@
 
 import { TIPOS } from './horarios.js';
 import { diasDeSemana, diasEntre, inicioSemana, sumarDias } from './fechas.js';
+import { afinidadConFavoritas } from './similares.js';
 
 const DIAS_PARA_PESO_MAXIMO = 28;
 
@@ -57,7 +58,8 @@ function elegirPonderado(opciones, pesos, rng) {
  * 1. Nunca repite receta en el mismo día.
  * 2. No repite en la misma semana (lunes a domingo) mientras haya opciones.
  * 3. Si ya salieron todas, repite la que salió hace más tiempo y lo avisa con `repetida: true`.
- * Es al azar, pero favorece las que llevan más días sin salir y las favoritas.
+ * Es al azar, pero favorece las que llevan más días sin salir, las favoritas (x2) y las del
+ * mismo estilo que las favoritas (hasta x1.5).
  */
 export function elegirReceta({ recetas, plan, fecha, tipo, excluir = [], rng = Math.random }) {
   const delDia = idsDelDia(plan, fecha, tipo);
@@ -71,7 +73,8 @@ export function elegirReceta({ recetas, plan, fecha, tipo, excluir = [], rng = M
   if (nuevas.length) {
     const pesos = nuevas.map((r) => {
       const dias = Math.min(distancias.get(r.id) ?? DIAS_PARA_PESO_MAXIMO, DIAS_PARA_PESO_MAXIMO);
-      return (1 + dias) * (r.favorita ? 2 : 1);
+      const estilo = r.favorita ? 2 : 1 + 0.5 * afinidadConFavoritas(r, recetas);
+      return (1 + dias) * estilo;
     });
     return { id: elegirPonderado(nuevas, pesos, rng).id, repetida: false };
   }

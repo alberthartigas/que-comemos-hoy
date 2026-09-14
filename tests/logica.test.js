@@ -173,3 +173,19 @@ test('elegir a mano libera el otro espacio del día y el historial se recorta', 
   const historial = { '2026-01-05': {}, '2026-09-01': {}, '2026-09-13': {} };
   assert.deepEqual(Object.keys(recortarHistorial(historial, '2026-09-13', 8)), ['2026-09-01', '2026-09-13']);
 });
+
+test('recetas parecidas y afinidad con favoritas', async () => {
+  const { afinidadConFavoritas, delEstiloDeFavoritas, recetasParecidas } = await import('../js/similares.js');
+  const huevos = RECETAS_BASE.find((r) => r.id === 'huevos-mexicana');
+  const parecidas = recetasParecidas(huevos, RECETAS_BASE);
+  assert.ok(parecidas.length >= 1 && parecidas.length <= 4);
+  assert.ok(!parecidas.some((r) => r.id === huevos.id), 'no debe incluirse a sí misma');
+  assert.ok(parecidas.some((r) => r.id === 'huevo-nopales' || r.id === 'burrito-huevo'), 'comparte huevo y desayuno');
+
+  assert.equal(afinidadConFavoritas(huevos, RECETAS_BASE), 0, 'sin favoritas no hay afinidad');
+  const conFavorita = RECETAS_BASE.map((r) => (r.id === 'huevos-mexicana' ? { ...r, favorita: true } : r));
+  const estilo = delEstiloDeFavoritas(conFavorita);
+  assert.ok(estilo.length >= 1 && !estilo.some((r) => r.favorita));
+  assert.ok(afinidadConFavoritas(conFavorita.find((r) => r.id === 'huevo-nopales'), conFavorita) > 0.5);
+  assert.equal(afinidadConFavoritas(conFavorita.find((r) => r.id === 'huevos-mexicana'), conFavorita), 0, 'la favorita no se compara consigo misma');
+});
