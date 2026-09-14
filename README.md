@@ -1,0 +1,89 @@
+# ¿Qué comemos hoy? 🍽️
+
+Web app para celular que sugiere **al azar** qué desayunar, comer y cenar. Calcula los ingredientes para tu familia (adultos y niños) e incluye una mini receta y un video de TikTok. Funciona 100 % en local, sin cuentas y sin instalar dependencias.
+
+## En internet y como app de Android
+
+- **Web publicada:** https://laspinchisalitas.tech/proyectos/appcomidas/ — funciona sin conexión después de la primera visita y se puede "Agregar a inicio".
+- **APK para Android:** https://github.com/alberthartigas/que-comemos-hoy/releases/latest/download/que-comemos-hoy.apk — la compila GitHub Actions (`.github/workflows/apk.yml`) cada vez que cambia `android/`. Es un envoltorio TWA que abre la web a pantalla completa, así que los cambios de la web llegan solos sin reinstalar.
+- **Subir cambios al VPS:** `./subir-al-vps.sh` (usa el host `pinchis` de `~/.ssh/config`; nginx sirve la carpeta con `snippets/appcomidas.conf`).
+- **Llave de firma de la APK:** `android/keystore/` (no se sube a GitHub; lee su `LEEME.txt`).
+
+## Arrancar en local
+
+Necesitas Node.js 18 o más nuevo.
+
+- En Mac: doble clic en **Iniciar app.command**.
+- O en la terminal, dentro de esta carpeta:
+
+```bash
+npm start
+```
+
+La terminal muestra dos direcciones:
+
+- `http://localhost:8080`: para esta computadora.
+- `http://192.168.x.x:8080`: para el **celular conectado al mismo Wi-Fi**.
+
+La primera vez, macOS puede preguntar si Node puede aceptar conexiones entrantes. Acepta, o el celular no podrá entrar.
+
+**Instalarla como app:** en iPhone (Safari) toca Compartir → "Agregar a inicio". En Android (Chrome) toca ⋮ → "Agregar a la pantalla principal".
+
+## Cómo decide qué toca
+
+| Horario (se cambia en Ajustes) | Sugiere |
+|---|---|
+| 05:00 – 11:59 | Desayuno |
+| 12:00 – 17:59 | Comida |
+| 18:00 – 22:59 | Cena |
+| Fuera de horario | La siguiente (en la noche, el desayuno de mañana) |
+
+Reglas del sorteo:
+
+- Nunca repite un platillo en el mismo día.
+- No repite platillos en la semana (lunes a domingo). Si ya salieron todas las recetas de un tipo, repite la que salió hace más tiempo y lo avisa.
+- Entre una semana y otra favorece las recetas que llevan más tiempo sin salir. Las favoritas ❤️ tienen el doble de probabilidad.
+- "Otra opción" cambia una comida sin romper las reglas. Las recetas pausadas no entran al sorteo.
+
+## Porciones
+
+Las cantidades de cada receta son para **1 adulto**. De fábrica, cada niño cuenta como el 60 % de un adulto; en Ajustes puedes elegir entre 40 % y 100 %, y hacer la porción de adulto ligera o abundante. Todo se redondea hacia arriba a cantidades que se pueden comprar (huevos enteros, ½ aguacate, gramos de 10 en 10). La lista de compras suma todas las comidas antes de redondear.
+
+## Recetas incluidas
+
+Trae 41 recetas mexicanas fáciles y saludables:
+
+- 14 desayunos, 16 comidas y 11 cenas. Algunas sirven para dos momentos del día.
+- Todas se hacen en 40 minutos o menos, con ingredientes de súper o mercado.
+- Cada una tiene un video de TikTok (enlaces verificados en septiembre de 2026) y un botón para buscar más.
+
+## Tus datos
+
+Todo se guarda en el navegador de cada dispositivo (localStorage), así que cada celular tiene sus propias recetas y su propio plan. Para pasarlos de uno a otro usa **Ajustes → Descargar respaldo / Importar respaldo**. Si cambia la IP de tu computadora, el celular lo trata como otro sitio y no ve tus datos: importa tu respaldo.
+
+## Estructura
+
+```
+index.html          Estructura y barra de pestañas
+css/styles.css      Estilos (modo claro y oscuro)
+js/app.js           Rutas, pintado y eventos
+js/vistas/          Pantallas: hoy, semana, compras, recetas, receta, formulario, ajustes
+js/planner.js       Sorteo y reglas de no repetición
+js/horarios.js      Regla de horario
+js/porciones.js     Porciones, redondeo y lista de compras
+js/store.js         Guardado local, respaldo e importación
+data/               Recetas base y videos de TikTok
+server.js           Servidor local sin dependencias
+tests/              Pruebas de la lógica (npm test)
+```
+
+```bash
+npm test
+```
+
+## Ideas para después
+
+- Publicarla con https (Netlify o GitHub Pages) para usarla fuera de casa e instalarla como app completa.
+- Compartir recetas y plan entre los celulares de la familia.
+- Llenar ingredientes y pasos pegando un enlace de TikTok.
+- Alergias y lista de "no me gusta".

@@ -1,0 +1,6 @@
+// Proyecto Android de "¿Qué comemos hoy?": un envoltorio TWA (Trusted Web Activity) que abre
+// https://laspinchisalitas.tech/proyectos/appcomidas/ a pantalla completa. No hay código Java:
+// la librería android-browser-helper pone la actividad. Se compila en GitHub Actions.
+plugins {
+    id 'com.android.application' version '8.13.2' apply false
+}

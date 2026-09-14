@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Sugerencias al azar de desayuno, comida y cena, con ingredientes por persona y video de TikTok.">
+  <meta name="theme-color" content="#fff7ef" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14100d" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="¿Qué comemos?">
+  <title>¿Qué comemos hoy?</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main id="vista" class="vista" tabindex="-1"></main>
+
+  <nav class="tabbar" aria-label="Secciones">
+    <a href="#/hoy" data-pestana="hoy"><span>Hoy</span></a>
+    <a href="#/semana" data-pestana="semana"><span>Semana</span></a>
+    <a href="#/compras" data-pestana="compras"><span>Compras</span></a>
+    <a href="#/recetas" data-pestana="recetas"><span>Recetas</span></a>
+    <a href="#/ajustes" data-pestana="ajustes"><span>Ajustes</span></a>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <noscript>Esta app necesita JavaScript activado.</noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

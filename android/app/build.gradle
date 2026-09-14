@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+// En GitHub Actions VERSION_CODE es el número de corrida, así cada APK tiene versión nueva.
+def codigoVersion = (System.getenv('VERSION_CODE') ?: '1').toInteger()
+def archivoLlave = System.getenv('KEYSTORE_FILE')
+
+android {
+    namespace 'tech.laspinchisalitas.appcomidas'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'tech.laspinchisalitas.appcomidas'
+        minSdk 24
+        targetSdk 36
+        versionCode codigoVersion
+        versionName "0.1.${codigoVersion}"
+    }
+
+    signingConfigs {
+        release {
+            if (archivoLlave) {
+                storeFile file(archivoLlave)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Sin llave (compilación local de prueba) se firma con la de depuración.
+            signingConfig archivoLlave ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+}

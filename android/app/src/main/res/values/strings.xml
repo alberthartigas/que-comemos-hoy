@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">¿Qué comemos hoy?</string>
+    <string name="launch_url">https://laspinchisalitas.tech/proyectos/appcomidas/</string>
+    <string name="host_name">laspinchisalitas.tech</string>
+    <string name="provider_authority">tech.laspinchisalitas.appcomidas.fileprovider</string>
+    <string name="asset_statements">[{ \"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://laspinchisalitas.tech\"}}]</string>
+</resources>

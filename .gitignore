@@ -1,0 +1,17 @@
+# Sistema
+.DS_Store
+node_modules/
+
+# Sesión de Claude Code
+.claude/
+
+# Llave de firma de la APK: NUNCA se sube; vive en android/keystore y en los secretos de GitHub
+android/keystore/
+*.jks
+*.keystore
+
+# Compilación Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
