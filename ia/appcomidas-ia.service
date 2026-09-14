@@ -1,0 +1,25 @@
+# Unidad de systemd para el servicio de IA. Se instala con subir-al-vps.sh en /etc/systemd/system/.
+[Unit]
+Description=IA de ¿Qué comemos hoy? (Groq)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+# systemd lee la clave como root y luego baja a www-data: el archivo sigue siendo 600 root.
+EnvironmentFile=/etc/appcomidas/ia.env
+Environment=PORT=3070
+Environment=ORIGENES=https://laspinchisalitas.tech
+WorkingDirectory=/opt/appcomidas-ia
+ExecStart=/usr/bin/node /opt/appcomidas-ia/ia/servidor.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

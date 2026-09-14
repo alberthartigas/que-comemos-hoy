@@ -9,11 +9,20 @@ ssh pinchis 'mkdir -p /var/www/pinchis/proyectos/appcomidas'
 
 rsync -rltv --delete \
   --exclude '.git' --exclude '.claude' --exclude 'android' --exclude 'tests' --exclude '.github' \
-  --exclude 'node_modules' --exclude 'server.js' --exclude 'package.json' --exclude 'README.md' \
+  --exclude 'node_modules' --exclude 'ia' --exclude 'server.js' --exclude 'package.json' --exclude 'README.md' \
   --exclude 'Iniciar app.command' --exclude 'subir-al-vps.sh' --exclude '.gitignore' --exclude '.DS_Store' \
   --exclude '*.apk' \
   ./ "$DESTINO"
 
 ssh pinchis 'chown -R www-data:www-data /var/www/pinchis/proyectos/appcomidas'
+
+# Servicio de IA: vive fuera del web root (nadie puede descargar su código) y corre con systemd.
+ssh pinchis 'mkdir -p /opt/appcomidas-ia'
+rsync -rltv --delete ia/ pinchis:/opt/appcomidas-ia/ia/
+rsync -rltv --delete --exclude 'vistas' --exclude 'app.js' --exclude 'ia.js' --exclude 'store.js' --exclude 'tema.js' --exclude 'iconos.js' --exclude 'util.js' --exclude 'planner.js' --exclude 'similares.js' js/ pinchis:/opt/appcomidas-ia/js/
+ssh pinchis 'chown -R root:root /opt/appcomidas-ia && chmod -R a+rX /opt/appcomidas-ia \
+  && cp /opt/appcomidas-ia/ia/appcomidas-ia.service /etc/systemd/system/appcomidas-ia.service \
+  && systemctl daemon-reload && systemctl enable --now appcomidas-ia >/dev/null 2>&1; systemctl restart appcomidas-ia \
+  && sleep 1 && systemctl is-active appcomidas-ia'
 echo
 echo "Listo: https://laspinchisalitas.tech/proyectos/appcomidas/"

@@ -1,14 +1,15 @@
 // Agregar o editar una receta.
 
 import { INFO_TIPO, TIPOS } from '../horarios.js';
+import { recetaDesdeTikTok } from '../ia.js';
 import { ICONOS } from '../iconos.js';
 import { UNIDADES } from '../porciones.js';
+import { ETIQUETAS } from '../recetas.js';
 import { eliminarReceta, guardarReceta, nuevoIdReceta } from '../store.js';
 import { busquedaTikTok, normalizarUrlTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
-import { regresar } from './comun.js';
+import { mostrarSeccionesIA, regresar } from './comun.js';
 
-const ETIQUETAS = ['Vegetariana', 'Alta en proteína', 'Ligera', 'Rica en fibra', 'Sin estufa', 'Para niños'];
 const EMOJIS = ['🍳', '🥞', '🥑', '🌮', '🌯', '🥗', '🍲', '🍝', '🍗', '🐟', '🍕', '🥪'];
 const NOMBRE_UNIDAD = {
   pza: 'pieza', g: 'gramos', kg: 'kilos', ml: 'mililitros', l: 'litros', taza: 'taza', cda: 'cucharada',
@@ -17,6 +18,9 @@ const NOMBRE_UNIDAD = {
 };
 
 const recetaEditada = (ctx) => (ctx.nombre === 'editar' ? ctx.estado.recetas.find((r) => r.id === ctx.args[0]) : null);
+
+// Receta que propuso la IA para el formulario actual (se pierde al guardar o al salir).
+let borradorIA = null;
 
 function filaIngrediente(ing = { nombre: '', cantidad: '', unidad: 'pza' }) {
   const cantidad = ing.unidad === 'gusto' ? '' : ing.cantidad;
@@ -56,10 +60,11 @@ export function render(ctx) {
     return `<div class="vacio"><span class="vacio__emoji">🤷</span><p>Esta receta ya no existe.</p><a class="btn btn--primario" href="#/recetas">Ver recetas</a></div>`;
   }
   const tipoPedido = ctx.params.get('tipo');
-  const receta = existente ?? {
+  let receta = existente ?? {
     nombre: '', emoji: '🍽️', tipos: TIPOS.includes(tipoPedido) ? [tipoPedido] : [], minutos: '', etiquetas: [], tip: '',
     pasos: [], tiktok: '', ingredientes: [0, 1, 2].map(() => ({ nombre: '', cantidad: '', unidad: 'pza' })),
   };
+  if (borradorIA?.hash === location.hash) receta = { ...receta, ...borradorIA.receta };
   const etiquetas = [...new Set([...ETIQUETAS, ...receta.etiquetas])];
 
   return `
@@ -72,6 +77,14 @@ export function render(ctx) {
     </header>
 
     <form class="formulario" data-envio="guardar" novalidate>
+      <section class="tarjeta tarjeta--ia" data-seccion-ia hidden>
+        <h2>🤖 Llenar con IA</h2>
+        <p class="nota">Pega el enlace del video de TikTok y la IA escribe el nombre, los ingredientes y los pasos. Luego revisa, corrige lo que quieras y guarda.</p>
+        <input class="entrada" name="ia-url" inputmode="url" placeholder="https://www.tiktok.com/@.../video/..." value="${esc(receta.tiktok)}" autocomplete="off" aria-label="Enlace de TikTok para la IA">
+        <button class="btn btn--primario btn--bloque" type="button" data-accion="ia-tiktok">✨ Llenar la receta con IA</button>
+        ${borradorIA?.hash === location.hash ? '<p class="tip">✅ La IA llenó la receta. Revísala y toca Guardar.</p>' : ''}
+      </section>
+
       <label class="campo">
         <span class="campo__titulo">Nombre del platillo</span>
         <input class="entrada" name="nombre" maxlength="80" value="${esc(receta.nombre)}" placeholder="Ej. Tacos de frijol con nopales" autocomplete="off" data-entrada="nombre">
@@ -134,8 +147,37 @@ export function render(ctx) {
     </form>`;
 }
 
+export function alMontar(raiz) {
+  mostrarSeccionesIA(raiz);
+}
+
 export const acciones = {
-  volver: (_boton, ctx) => regresar(ctx, '#/recetas'),
+  volver(_boton, ctx) {
+    borradorIA = null;
+    regresar(ctx, '#/recetas');
+  },
+  async 'ia-tiktok'(boton, ctx) {
+    const form = boton.closest('form');
+    const url = normalizarUrlTikTok(form.elements['ia-url'].value);
+    if (!url) {
+      toast('Pega un enlace de tiktok.com.');
+      form.elements['ia-url'].focus();
+      return;
+    }
+    const hash = location.hash;
+    boton.disabled = true;
+    boton.textContent = '⏳ Pensando… tarda unos segundos';
+    try {
+      const { receta } = await recetaDesdeTikTok(url, form.elements.nombre.value.trim());
+      borradorIA = { hash, receta: { ...receta, tiktok: url } };
+      toast('✨ Listo: revisa la receta y guárdala');
+      if (location.hash === hash) ctx.repintar();
+    } catch (error) {
+      toast(error.message);
+      boton.disabled = false;
+      boton.textContent = '✨ Llenar la receta con IA';
+    }
+  },
   emoji(boton) {
     boton.closest('form').elements.emoji.value = boton.dataset.emoji;
   },
@@ -199,6 +241,7 @@ export const envios = {
       etiquetas: datos.getAll('etiquetas'),
       tip: String(datos.get('tip')).trim(),
     });
+    borradorIA = null;
     toast(existente ? 'Cambios guardados' : '¡Receta agregada! Ya entra al sorteo 🎲');
     ctx.navegar(`#/receta/${encodeURIComponent(guardada.id)}`, { reemplazar: true });
   },

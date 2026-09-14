@@ -1,6 +1,7 @@
 // Piezas que comparten varias pantallas.
 
 import { INFO_TIPO } from '../horarios.js';
+import { estadoIA } from '../ia.js';
 import { ICONOS } from '../iconos.js';
 import { alternarFavorita, obtenerEstado, otraOpcion } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
@@ -98,4 +99,12 @@ export function stepperPersonas(campo, etiqueta, valor, minimo) {
 export function regresar(ctx, respaldo) {
   if (history.length > 1) history.back();
   else ctx.navegar(respaldo, { reemplazar: true });
+}
+
+/** Las secciones [data-seccion-ia] nacen ocultas y se muestran solo si el servidor tiene IA. */
+export function mostrarSeccionesIA(raiz) {
+  estadoIA().then((estado) => {
+    if (!estado.disponible) return;
+    for (const seccion of raiz.querySelectorAll('[data-seccion-ia]')) seccion.hidden = false;
+  });
 }

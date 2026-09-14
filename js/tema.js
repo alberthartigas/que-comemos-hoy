@@ -1,14 +1,15 @@
-// Modo claro/oscuro. "auto" sigue al sistema; "claro" y "oscuro" son elección de la persona.
+// Modo claro/oscuro. De fábrica es "claro"; "oscuro" y "auto" (sigue al sistema) son elección de la persona.
 // Se guarda aparte del resto de los datos: es una preferencia de este dispositivo.
 
 const CLAVE = 'que-comemos-hoy:tema';
 const COLOR_BARRA = { claro: '#fff7ef', oscuro: '#14100d' };
 
 export const TEMAS = [
-  { id: 'auto', nombre: 'Automático', descripcion: 'Sigue al sistema del celular' },
   { id: 'claro', nombre: 'Claro' },
   { id: 'oscuro', nombre: 'Oscuro' },
+  { id: 'auto', nombre: 'Automático', descripcion: 'Sigue al sistema del celular' },
 ];
+const TEMA_DEFECTO = 'claro';
 
 const sistemaOscuro = window.matchMedia('(prefers-color-scheme: dark)');
 const oyentes = new Set();
@@ -16,9 +17,9 @@ const oyentes = new Set();
 export function temaGuardado() {
   try {
     const tema = localStorage.getItem(CLAVE);
-    return TEMAS.some((t) => t.id === tema) ? tema : 'auto';
+    return TEMAS.some((t) => t.id === tema) ? tema : TEMA_DEFECTO;
   } catch {
-    return 'auto';
+    return TEMA_DEFECTO;
   }
 }
 

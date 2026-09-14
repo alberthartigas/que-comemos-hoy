@@ -14,8 +14,8 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <script>
-    // Tema elegido por la persona (claro/oscuro); se aplica antes del CSS para que no parpadee.
-    try { var t = localStorage.getItem('que-comemos-hoy:tema'); if (t === 'claro' || t === 'oscuro') document.documentElement.dataset.tema = t; } catch (e) {}
+    // Tema: claro de fábrica; "oscuro" o "auto" si la persona lo eligió. Se aplica antes del CSS para que no parpadee.
+    (function () { var t = 'claro'; try { t = localStorage.getItem('que-comemos-hoy:tema') || 'claro'; } catch (e) {} if (t !== 'auto') document.documentElement.dataset.tema = t === 'oscuro' ? 'oscuro' : 'claro'; })();
   </script>
   <link rel="stylesheet" href="css/styles.css">
 </head>

@@ -2,16 +2,39 @@
 
 import { claveFecha, fechaLarga } from '../fechas.js';
 import { INFO_TIPO } from '../horarios.js';
+import { variantesDe } from '../ia.js';
 import { ICONOS } from '../iconos.js';
 import { escalarIngredientes, porcionesTotales } from '../porciones.js';
 import { recetasParecidas } from '../similares.js';
-import { alternarActiva, usarRecetaEn } from '../store.js';
+import { alternarActiva, guardarReceta, nuevoIdReceta, usarRecetaEn } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { autorTikTok, esc, toast } from '../util.js';
-import { accionFavorita, botonFavorita, listaMini, regresar, stepperPersonas } from './comun.js';
+import { accionFavorita, botonFavorita, listaMini, mostrarSeccionesIA, regresar, stepperPersonas } from './comun.js';
 
 // Adultos y niños solo para esta receta (no cambia los ajustes de la casa).
 let personas = null;
+
+// Variantes que propuso la IA para la receta abierta.
+let variantes = { id: null, lista: [], cargando: false, error: '' };
+
+function seccionVariantes(receta) {
+  const v = variantes.id === receta.id ? variantes : { lista: [], cargando: false, error: '' };
+  const lista = v.lista.map((variante, i) => `<details class="variante">
+    <summary><span class="emoji-caja">${esc(variante.emoji)}</span><span class="receta-item__texto"><strong>${esc(variante.nombre)}</strong><small>${variante.tipos.map((t) => INFO_TIPO[t].nombre).join(' · ')}${variante.minutos ? ` · ${variante.minutos} min` : ''} · ${variante.ingredientes.length} ingredientes</small></span></summary>
+    <p class="nota">${variante.ingredientes.map((ing) => esc(ing.nombre)).join(', ')}.</p>
+    <ol class="pasos">${variante.pasos.map((paso) => `<li><span>${esc(paso)}</span></li>`).join('')}</ol>
+    ${variante.agregadaId
+      ? `<a class="btn btn--verde btn--bloque" href="#/receta/${encodeURIComponent(variante.agregadaId)}">✅ Agregada: ver receta</a>`
+      : `<button class="btn btn--primario btn--bloque" type="button" data-accion="agregar-variante" data-indice="${i}">${ICONOS.mas} Agregar a mis recetas</button>`}
+  </details>`).join('');
+  return `<section class="tarjeta tarjeta--ia" data-seccion-ia hidden>
+    <h2>🤖 Variantes con IA</h2>
+    <p class="nota">Platillos distintos pero del mismo estilo que esta receta. Los que te gusten los agregas a tu catálogo.</p>
+    ${lista}
+    ${v.error ? `<p class="aviso">${esc(v.error)}</p>` : ''}
+    <button class="btn ${v.lista.length ? '' : 'btn--primario '}btn--bloque" type="button" data-accion="variantes"${v.cargando ? ' disabled' : ''}>${v.cargando ? '⏳ Pensando… tarda unos segundos' : v.lista.length ? '✨ Dame otras 3' : '✨ Dame 3 variantes'}</button>
+  </section>`;
+}
 
 const recetaActual = ({ estado, args }) => estado.recetas.find((r) => r.id === args[0]);
 
@@ -102,6 +125,8 @@ export function render(ctx) {
       ${listaMini(parecidas)}
     </section>` : ''}
 
+    ${seccionVariantes(receta)}
+
     <section class="tarjeta">
       <h2>📅 Cocinarla hoy</h2>
       <p class="nota">Ponla en el plan de hoy en lugar de la sugerencia:</p>
@@ -124,8 +149,33 @@ function cambiarPersonas(campo, cambio, ctx) {
   ctx.repintar();
 }
 
+export function alMontar(raiz) {
+  mostrarSeccionesIA(raiz);
+}
+
 export const acciones = {
   volver: (_boton, ctx) => regresar(ctx, '#/recetas'),
+  async variantes(_boton, ctx) {
+    const receta = recetaActual(ctx);
+    if (!receta) return;
+    const existentes = ctx.estado.recetas.map((r) => r.nombre);
+    variantes = { id: receta.id, lista: [], cargando: true, error: '' };
+    ctx.repintar();
+    try {
+      const { variantes: lista } = await variantesDe(receta, existentes);
+      variantes = { id: receta.id, lista, cargando: false, error: '' };
+    } catch (error) {
+      variantes = { id: receta.id, lista: [], cargando: false, error: error.message };
+    }
+    if (location.hash.startsWith(`#/receta/${encodeURIComponent(receta.id)}`)) ctx.repintar();
+  },
+  'agregar-variante'(boton, ctx) {
+    const variante = variantes.lista[Number(boton.dataset.indice)];
+    if (!variante || variante.agregadaId) return;
+    const guardada = guardarReceta({ ...variante, id: nuevoIdReceta(), origen: 'propia' });
+    variante.agregadaId = guardada.id;
+    toast(`¡${guardada.nombre} agregada! Ya entra al sorteo 🎲`);
+  },
   favorita: accionFavorita,
   mas: (boton, ctx) => cambiarPersonas(boton.dataset.campo, 1, ctx),
   menos: (boton, ctx) => cambiarPersonas(boton.dataset.campo, -1, ctx),

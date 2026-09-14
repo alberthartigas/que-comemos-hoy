@@ -27,7 +27,7 @@ async function sinConexion(request) {
 self.addEventListener('fetch', (evento) => {
   const { request } = evento;
   const url = new URL(request.url);
-  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/api/')) return;
 
   evento.respondWith(
     fetch(request)

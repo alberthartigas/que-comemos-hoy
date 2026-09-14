@@ -54,7 +54,18 @@ Toca el ❤️ de una receta (en la lista o en su detalle) para marcarla como fa
 
 ## Modo claro y oscuro
 
-El botón redondo de arriba a la derecha cambia entre claro y oscuro; en Ajustes → Apariencia puedes dejarlo en Automático (sigue al celular). La preferencia se guarda en el dispositivo. El logo de la barra superior es una máscara que toma el color del texto, así se ve bien en los dos modos; los íconos de la app son el símbolo en blanco sobre negro (`icons/`, generados desde el logo original).
+De fábrica la app se ve en modo claro. El botón redondo de arriba a la derecha cambia entre claro y oscuro; en Ajustes → Apariencia puedes elegir Claro, Oscuro o Automático (sigue al celular). La preferencia se guarda en el dispositivo. El logo de la barra superior es una máscara que toma el color del texto, así se ve bien en los dos modos; los íconos de la app son el símbolo en blanco sobre negro (`icons/`, generados desde el logo original).
+
+## IA (Groq)
+
+Dos funciones, ambas opcionales: la app las muestra solo si el servidor tiene IA.
+
+- **Llenar una receta desde TikTok:** en "Nueva comida" pega el enlace del video y la IA escribe nombre, ingredientes (para 1 adulto) y pasos; tú revisas y guardas.
+- **Variantes de una receta:** en el detalle de cualquier receta, "Dame 3 variantes" propone platillos distintos del mismo estilo, con todo y pasos, listos para agregar al catálogo.
+
+Cómo funciona: la clave de Groq vive **solo en el servidor** (`/etc/appcomidas/ia.env`, legible únicamente por root; systemd se la pasa al servicio). El servicio Node (`ia/servidor.js`, unidad `appcomidas-ia`) escucha en 127.0.0.1:3070 fuera del web root, y nginx lo publica en `/proyectos/appcomidas/api/`. Protecciones: solo acepta peticiones con origen `https://laspinchisalitas.tech`, nginx limita a 10 por minuto por IP y el servicio a 20 por hora por IP y 400 por día. Modelos: `openai/gpt-oss-120b` con respaldo automático a `gpt-oss-20b` y `qwen3.8-27b` (se cambian con `GROQ_MODELS`). La lógica está en `ia/ia.js` y se prueba en local con `GROQ_API_KEY=... npm start`.
+
+Para cambiar la clave: vuelve a correr en el VPS el comando que guarda `/etc/appcomidas/ia.env` y luego `systemctl restart appcomidas-ia`.
 
 ## Porciones
 

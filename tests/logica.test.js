@@ -189,3 +189,21 @@ test('recetas parecidas y afinidad con favoritas', async () => {
   assert.ok(afinidadConFavoritas(conFavorita.find((r) => r.id === 'huevo-nopales'), conFavorita) > 0.5);
   assert.equal(afinidadConFavoritas(conFavorita.find((r) => r.id === 'huevos-mexicana'), conFavorita), 0, 'la favorita no se compara consigo misma');
 });
+
+test('IA: extraer JSON y sanear lo que devuelve el modelo', async () => {
+  const { extraerJSON } = await import('../ia/ia.js');
+  const { sanearReceta } = await import('../js/recetas.js');
+  assert.deepEqual(extraerJSON('```json\n{"a": 1}\n```'), { a: 1 });
+  assert.deepEqual(extraerJSON('Claro, aquí va: {"nombre": "Tacos {ricos}", "pasos": ["a}b"]} y ya.'), { nombre: 'Tacos {ricos}', pasos: ['a}b'] });
+  assert.throws(() => extraerJSON('sin json'), /JSON/);
+  const receta = sanearReceta({ id: 'x', nombre: ' Sopa ', emoji: '🍲', tipos: ['cena', 'postre'], minutos: '25',
+    ingredientes: [{ nombre: 'Calabacita', cantidad: '1', unidad: 'pza' }, { nombre: 'Sal', cantidad: 0, unidad: 'gusto' }, { nombre: '', cantidad: 1, unidad: 'pza' }, { nombre: 'Rara', cantidad: 2, unidad: 'kgs' }],
+    pasos: ['Pica.', '', 'Cuece.'], tiktok: 'javascript:alert(1)' });
+  assert.equal(receta.nombre, 'Sopa');
+  assert.deepEqual(receta.tipos, ['cena']);
+  assert.equal(receta.minutos, 25);
+  assert.equal(receta.ingredientes.length, 3);
+  assert.equal(receta.ingredientes[2].unidad, 'pza');
+  assert.deepEqual(receta.pasos, ['Pica.', 'Cuece.']);
+  assert.equal(receta.tiktok, '');
+});

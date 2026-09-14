@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { crearManejadorIA } from './ia/ia.js';
 
 const RAIZ = fileURLToPath(new URL('.', import.meta.url));
 const PUERTO = Number(process.env.PORT) || 8080;
@@ -19,6 +20,8 @@ const TIPOS = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
 };
+// IA en local: exporta GROQ_API_KEY antes de `npm start` (sin clave, la app oculta las funciones de IA).
+const manejarIA = crearManejadorIA({ apiKey: process.env.GROQ_API_KEY, origenes: [] });
 const PUBLICOS = new Set(['index.html', 'manifest.webmanifest', 'sw.js', 'css', 'js', 'data', 'icons']);
 
 function direccionesWifi() {
@@ -34,14 +37,15 @@ function responder(res, estado, cuerpo, tipo = 'text/plain; charset=utf-8') {
 }
 
 const servidor = createServer(async (req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') return responder(res, 405, 'Método no permitido');
-
   let ruta;
   try {
     ruta = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   } catch {
     return responder(res, 400, 'Dirección inválida');
   }
+
+  if (ruta.startsWith('/api/ia/')) return manejarIA(req, res, ruta.slice('/api/ia/'.length).replace(/\/+$/, ''));
+  if (req.method !== 'GET' && req.method !== 'HEAD') return responder(res, 405, 'Método no permitido');
 
   if (ruta === '/api/red') {
     return responder(res, 200, JSON.stringify({ urls: direccionesWifi() }), TIPOS['.json']);

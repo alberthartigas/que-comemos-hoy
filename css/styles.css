@@ -504,6 +504,16 @@ a.chip { align-self: flex-start; }
   font-size: 15px;
 }
 
+/* ---------- IA ---------- */
+
+.tarjeta--ia { border: 1.5px dashed var(--borde); }
+.variante { border-radius: 16px; background: var(--superficie-2); padding: 6px 10px; }
+.variante summary { display: flex; align-items: center; gap: 12px; min-height: 52px; cursor: pointer; list-style: none; }
+.variante summary::-webkit-details-marker { display: none; }
+.variante[open] summary { padding-bottom: 8px; border-bottom: 1px solid var(--borde); }
+.variante .pasos { margin: 10px 0 12px; }
+.variante .nota { margin: 8px 0 0; }
+
 /* ---------- Formularios y ajustes ---------- */
 
 .formulario { display: flex; flex-direction: column; gap: 16px; }
