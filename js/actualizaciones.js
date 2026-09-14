@@ -5,8 +5,9 @@
 
 const REPO = 'alberthartigas/que-comemos-hoy';
 const API_ULTIMA = `https://api.github.com/repos/${REPO}/releases/latest`;
-const APK_RESPALDO = new URL('que-comemos-hoy.apk', document.baseURI).href;
-const VERSION_RESPALDO = new URL('version.json', document.baseURI).href;
+// Se calculan al usarse: este módulo también se importa en las pruebas de Node, donde no hay `document`.
+const apkRespaldo = () => new URL('que-comemos-hoy.apk', document.baseURI).href;
+const versionRespaldo = () => new URL('version.json', document.baseURI).href;
 const CLAVE_APK = 'que-comemos-hoy:apk';
 const CLAVE_ULTIMA = 'que-comemos-hoy:ultima-release';
 const CLAVE_POSPUESTA = 'que-comemos-hoy:actualizacion-pospuesta';
@@ -63,14 +64,14 @@ async function consultarGitHub() {
   if (!respuesta.ok) throw new Error(`GitHub ${respuesta.status}`);
   const datos = await respuesta.json();
   const apk = (datos.assets ?? []).find((a) => a.name?.endsWith('.apk'));
-  return { codigo: codigoDeEtiqueta(datos.tag_name), version: String(datos.tag_name ?? '').replace(/^v/, ''), url: apk?.browser_download_url ?? APK_RESPALDO, notas: String(datos.body ?? '').slice(0, 400) };
+  return { codigo: codigoDeEtiqueta(datos.tag_name), version: String(datos.tag_name ?? '').replace(/^v/, ''), url: apk?.browser_download_url ?? apkRespaldo(), notas: String(datos.body ?? '').slice(0, 400) };
 }
 
 async function consultarRespaldo() {
-  const respuesta = await fetch(VERSION_RESPALDO, { cache: 'no-store' });
+  const respuesta = await fetch(versionRespaldo(), { cache: 'no-store' });
   if (!respuesta.ok) throw new Error(`version.json ${respuesta.status}`);
   const datos = await respuesta.json();
-  return { codigo: Number(datos.versionCode) || 0, version: String(datos.versionName ?? ''), url: datos.url || APK_RESPALDO, notas: '' };
+  return { codigo: Number(datos.versionCode) || 0, version: String(datos.versionName ?? ''), url: datos.url || apkRespaldo(), notas: '' };
 }
 
 /** Última release conocida (usa caché de 6 h salvo que se fuerce). Devuelve null si no se pudo consultar. */
