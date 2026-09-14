@@ -599,4 +599,7 @@ select.entrada {
 .horario__a { grid-area: a; color: var(--texto-suave); }
 .horario input { min-width: 0; }
 
+.aviso-fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 600; }
+.aviso-fila .entrada { width: 150px; }
+
 .url-lan { padding: 12px 14px; border-radius: 12px; background: var(--superficie-2); font: 700 17px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; user-select: all; -webkit-user-select: all; }

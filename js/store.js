@@ -8,6 +8,9 @@ import { cambiarReceta, completarDia, completarSemana, fijarReceta, recortarHist
 import { sanearReceta } from './recetas.js';
 
 const CLAVE_ALMACEN = 'que-comemos-hoy:v1';
+// Notificaciones: hora de aviso por comida (null = sin aviso para esa comida)
+export const AVISOS_DEFECTO = { activos: false, desayuno: '07:30', comida: '12:30', cena: '19:00' };
+const HORA_VALIDA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const copiar = (valor) => JSON.parse(JSON.stringify(valor));
 const acotar = (n, min, max, defecto) => (Number.isFinite(Number(n)) ? Math.min(max, Math.max(min, Number(n))) : defecto);
@@ -25,6 +28,7 @@ function estadoVacio() {
       factorAdulto: FACTOR_ADULTO_DEFECTO,
       factorNino: FACTOR_NINO_DEFECTO,
       horarios: copiar(HORARIOS_DEFECTO),
+      avisos: copiar(AVISOS_DEFECTO),
     },
     plan: {},
     compras: {},
@@ -42,6 +46,11 @@ export function sanearEstado(datos) {
   ajustes.factorAdulto = acotar(ajustes.factorAdulto, 0.5, 2, FACTOR_ADULTO_DEFECTO);
   ajustes.factorNino = acotar(ajustes.factorNino, 0.3, 1, FACTOR_NINO_DEFECTO);
   ajustes.horarios = normalizarHorarios(ajustes.horarios);
+  const avisos = esObjeto(ajustes.avisos) ? ajustes.avisos : {};
+  ajustes.avisos = {
+    activos: avisos.activos === true,
+    ...Object.fromEntries(['desayuno', 'comida', 'cena'].map((t) => [t, HORA_VALIDA.test(avisos[t] ?? '') ? avisos[t] : avisos[t] === null ? null : AVISOS_DEFECTO[t]])),
+  };
 
   const vistos = new Set();
   const recetas = (Array.isArray(datos.recetas) ? datos.recetas : [])

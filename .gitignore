@@ -16,3 +16,6 @@ android/build/
 android/app/build/
 android/local.properties
 dist/
+
+# Dependencias del servidor (se instalan en el VPS con npm ci)
+ia/node_modules/

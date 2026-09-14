@@ -4,6 +4,7 @@ import { claveFecha } from './fechas.js';
 import { tipoSegunHora } from './horarios.js';
 import { ICONOS } from './iconos.js';
 import { errorDeGuardado, obtenerEstado, suscribir } from './store.js';
+import { iniciarSincronizacionAvisos } from './push.js';
 import { alCambiarTema, alternarTema, aplicarTema, temaEfectivo } from './tema.js';
 import { toast } from './util.js';
 import * as ajustes from './vistas/ajustes.js';
@@ -130,5 +131,5 @@ pintar();
 
 if (errorDeGuardado()) toast(errorDeGuardado());
 if ('serviceWorker' in navigator && window.isSecureContext) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(() => iniciarSincronizacionAvisos()).catch(() => {});
 }

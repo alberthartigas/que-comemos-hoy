@@ -207,3 +207,27 @@ test('IA: extraer JSON y sanear lo que devuelve el modelo', async () => {
   assert.deepEqual(receta.pasos, ['Pica.', 'Cuece.']);
   assert.equal(receta.tiktok, '');
 });
+
+test('push: hora local, avisos pendientes y saneado de suscripciones', async () => {
+  const { avisosPendientes, horaLocal, mensajeAviso, sanearSuscripcion } = await import('../ia/push.js');
+  const instante = new Date('2026-09-14T14:30:00Z'); // 07:30 en Hermosillo (UTC-7), 08:30 en CDMX (UTC-6)
+  assert.deepEqual(horaLocal(instante, 'America/Hermosillo'), { fecha: '2026-09-14', hhmm: '07:30' });
+  assert.equal(horaLocal(instante, 'America/Mexico_City').hhmm, '08:30');
+  assert.equal(horaLocal(instante, 'Zona/Inexistente').hhmm, '08:30', 'zona rara cae a CDMX');
+
+  const sub = { zona: 'America/Hermosillo', avisos: { desayuno: '07:30', comida: '12:30', cena: null }, enviados: {}, plan: { '2026-09-14': { desayuno: 'Molletes' } } };
+  assert.deepEqual(avisosPendientes(sub, instante), [{ tipo: 'desayuno', fecha: '2026-09-14' }]);
+  assert.deepEqual(avisosPendientes({ ...sub, enviados: { desayuno: '2026-09-14' } }, instante), [], 'no repite el mismo día');
+  assert.deepEqual(avisosPendientes(sub, new Date('2026-09-14T14:31:00Z')), [], 'solo en el minuto exacto');
+  assert.match(mensajeAviso(sub, 'desayuno', '2026-09-14').cuerpo, /^Molletes/);
+  assert.match(mensajeAviso(sub, 'cena', '2026-09-14').cuerpo, /Abre la app/);
+
+  const limpia = sanearSuscripcion({
+    suscripcion: { endpoint: 'https://fcm.googleapis.com/x', keys: { p256dh: 'a', auth: 'b' } },
+    avisos: { desayuno: '7:30', comida: '12:30' }, zona: 'America/Hermosillo',
+    plan: { '2026-09-14': { comida: 'Tinga', postre: 'x' }, malo: {} },
+  }, 'https://ejemplo/');
+  assert.deepEqual(limpia.avisos, { desayuno: null, comida: '12:30', cena: null });
+  assert.deepEqual(limpia.plan, { '2026-09-14': { comida: 'Tinga' } });
+  assert.equal(sanearSuscripcion({ suscripcion: { endpoint: 'http://inseguro', keys: { p256dh: 'a', auth: 'b' } } }), null);
+});

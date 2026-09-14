@@ -10,8 +10,13 @@ User=www-data
 Group=www-data
 # systemd lee la clave como root y luego baja a www-data: el archivo sigue siendo 600 root.
 EnvironmentFile=/etc/appcomidas/ia.env
+# Llaves VAPID de las notificaciones push (opcional: sin ellas el push queda apagado)
+EnvironmentFile=-/etc/appcomidas/push.env
 Environment=PORT=3070
 Environment=ORIGENES=https://laspinchisalitas.tech
+Environment=URL_APP=https://laspinchisalitas.tech/proyectos/appcomidas/
+# Crea /var/lib/appcomidas (dueño www-data) y lo expone en STATE_DIRECTORY: ahí viven las suscripciones
+StateDirectory=appcomidas
 WorkingDirectory=/opt/appcomidas-ia
 ExecStart=/usr/bin/node /opt/appcomidas-ia/ia/servidor.js
 Restart=on-failure

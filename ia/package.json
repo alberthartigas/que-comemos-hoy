@@ -1,0 +1,9 @@
+{
+  "name": "que-comemos-hoy-servidor",
+  "private": true,
+  "description": "Servicio de IA y notificaciones push de ¿Qué comemos hoy? (corre en el VPS con systemd).",
+  "type": "module",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

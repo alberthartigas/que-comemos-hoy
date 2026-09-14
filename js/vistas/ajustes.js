@@ -4,6 +4,7 @@ import { claveFecha } from '../fechas.js';
 import { HORARIOS_DEFECTO, INFO_TIPO, TIPOS } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { porcionesTotales } from '../porciones.js';
+import { activarAvisos, desactivarAvisos, esIphoneSinInstalar, permisoNotificaciones, probarAviso, soportaPush } from '../push.js';
 import {
   actualizarAjustes, borrarTodo, exportarDatos, importarDatos, restaurarRecetasBase, volverASortearSemana,
 } from '../store.js';
@@ -69,6 +70,21 @@ export function render({ estado }) {
     </section>
 
     <section class="tarjeta">
+      <h2>🔔 Avisos de comida</h2>
+      <p class="nota">Una notificación a la hora de cada comida con el platillo que toca hoy. Deja vacía la hora de una comida si no quieres aviso de esa.</p>
+      ${notaAvisos()}
+      <label class="interruptor">
+        <span>Avisarme qué toca</span>
+        <input type="checkbox" data-cambio="avisos-activos"${ajustes.avisos.activos ? ' checked' : ''}>
+      </label>
+      ${TIPOS.map((tipo) => `<label class="aviso-fila">
+        <span>${INFO_TIPO[tipo].emoji} ${INFO_TIPO[tipo].nombre}</span>
+        <input class="entrada" type="time" value="${ajustes.avisos[tipo] ?? ''}" data-cambio="aviso-hora" data-tipo="${tipo}" aria-label="Hora del aviso de ${INFO_TIPO[tipo].nombre.toLowerCase()}">
+      </label>`).join('')}
+      ${ajustes.avisos.activos ? '<button class="btn btn--bloque" type="button" data-accion="aviso-probar">Enviar un aviso de prueba</button>' : ''}
+    </section>
+
+    <section class="tarjeta">
       <h2>🎨 Apariencia</h2>
       <div class="opciones">
         ${TEMAS.map((t) => `<label class="opcion"><input type="radio" name="tema" value="${t.id}" data-cambio="tema"${t.id === tema ? ' checked' : ''}><span>${t.id === 'claro' ? '☀️ ' : t.id === 'oscuro' ? '🌙 ' : ''}${t.nombre}</span></label>`).join('')}
@@ -108,6 +124,13 @@ export function render({ estado }) {
     <p class="pie">¿Qué comemos hoy? · versión de prueba 0.1</p>`;
 }
 
+function notaAvisos() {
+  if (soportaPush() && permisoNotificaciones() === 'denied') return '<p class="aviso">Las notificaciones están bloqueadas para esta app. Actívalas en los ajustes del celular o del navegador.</p>';
+  if (soportaPush()) return '';
+  if (esIphoneSinInstalar()) return '<p class="aviso">En iPhone: agrega la app a inicio (Safari → Compartir → Agregar a inicio) y ábrela desde ahí para activar los avisos.</p>';
+  return '<p class="aviso">Este navegador no soporta notificaciones. Instala la app en el celular para usarlas.</p>';
+}
+
 function cambiarPersonas(campo, cambio, { estado }) {
   const { ajustes } = estado;
   const valor = Math.min(20, Math.max(0, ajustes[campo] + cambio));
@@ -121,6 +144,14 @@ export const acciones = {
   'horarios-defecto'() {
     actualizarAjustes({ horarios: HORARIOS_DEFECTO });
     toast('Horarios restablecidos');
+  },
+  async 'aviso-probar'() {
+    try {
+      await probarAviso();
+      toast('Aviso enviado: debe llegar en unos segundos');
+    } catch (error) {
+      toast(error.message);
+    }
   },
   exportar() {
     descargarArchivo(`respaldo-que-comemos-${claveFecha()}.json`, exportarDatos());
@@ -142,6 +173,24 @@ export const acciones = {
 };
 
 export const cambios = {
+  async 'avisos-activos'(casilla, ctx) {
+    try {
+      if (casilla.checked) {
+        await activarAvisos();
+        toast('🔔 Avisos activados');
+      } else {
+        await desactivarAvisos();
+        toast('Avisos desactivados');
+      }
+    } catch (error) {
+      toast(error.message);
+    }
+    ctx.repintar();
+  },
+  'aviso-hora'(campo, { estado }) {
+    const { tipo } = campo.dataset;
+    actualizarAjustes({ avisos: { ...estado.ajustes.avisos, [tipo]: campo.value.slice(0, 5) || null } });
+  },
   tema: (radio) => guardarTema(radio.value),
   factorAdulto: (select) => actualizarAjustes({ factorAdulto: Number(select.value) }),
   factorNino: (select) => actualizarAjustes({ factorNino: Number(select.value) }),

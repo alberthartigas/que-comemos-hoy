@@ -3,6 +3,8 @@
 
     <!-- La pantalla de respaldo (WebView) y el navegador necesitan red -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: para mostrar las notificaciones push como de esta app -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Android 11+: sin esto la app no "ve" qué navegadores soportan Custom Tabs / TWA -->
     <queries>
@@ -72,6 +74,23 @@
         </activity>
         <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity" />
         <activity android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity" android:configChanges="orientation|screenSize" />
+
+        <!-- Notificaciones push: Chrome se las entrega a la app (ícono y nombre de la app) y le pide
+             el permiso de Android 13+ a través de esta actividad. -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="false" />
+
+        <service
+            android:name="com.google.androidbrowserhelper.trusted.DelegationService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

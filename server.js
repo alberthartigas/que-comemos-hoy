@@ -7,6 +7,8 @@ import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crearManejadorIA } from './ia/ia.js';
+import { crearPush } from './ia/push.js';
+import { crearManejadorPush } from './ia/push-http.js';
 
 const RAIZ = fileURLToPath(new URL('.', import.meta.url));
 const PUERTO = Number(process.env.PORT) || 8080;
@@ -22,6 +24,13 @@ const TIPOS = {
 };
 // IA en local: exporta GROQ_API_KEY antes de `npm start` (sin clave, la app oculta las funciones de IA).
 const manejarIA = crearManejadorIA({ apiKey: process.env.GROQ_API_KEY, origenes: [] });
+// Push en local: exporta VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y PUSH_DIR (sin eso queda apagado).
+const push = await crearPush({
+  directorio: process.env.PUSH_DIR || '',
+  vapid: { publica: process.env.VAPID_PUBLIC_KEY, privada: process.env.VAPID_PRIVATE_KEY, sujeto: process.env.VAPID_SUBJECT },
+  urlApp: `http://localhost:${PUERTO}/`,
+});
+const manejarPush = crearManejadorPush({ push, origenes: [] });
 const PUBLICOS = new Set(['index.html', 'manifest.webmanifest', 'sw.js', 'css', 'js', 'data', 'icons']);
 
 function direccionesWifi() {
@@ -45,6 +54,7 @@ const servidor = createServer(async (req, res) => {
   }
 
   if (ruta.startsWith('/api/ia/')) return manejarIA(req, res, ruta.slice('/api/ia/'.length).replace(/\/+$/, ''));
+  if (ruta.startsWith('/api/push/')) return manejarPush(req, res, ruta.slice('/api/push/'.length).replace(/\/+$/, ''));
   if (req.method !== 'GET' && req.method !== 'HEAD') return responder(res, 405, 'Método no permitido');
 
   if (ruta === '/api/red') {

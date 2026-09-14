@@ -1,7 +1,7 @@
 // Service worker: primero la red (así nunca ves una versión vieja mientras desarrollas)
 // y, si no hay conexión, lo último que se guardó. Solo se activa en https o localhost.
 
-const CACHE = 'que-comemos-hoy-v2';
+const CACHE = 'que-comemos-hoy-v3';
 const PORTADA = new URL('./', self.location).href;
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -39,5 +39,38 @@ self.addEventListener('fetch', (evento) => {
         return respuesta;
       })
       .catch(() => sinConexion(request)),
+  );
+});
+
+// ---------- Notificaciones push (las manda ia/push.js del servidor) ----------
+
+self.addEventListener('push', (evento) => {
+  let datos = {};
+  try {
+    datos = evento.data?.json() ?? {};
+  } catch {
+    datos = { cuerpo: evento.data?.text() ?? '' };
+  }
+  evento.waitUntil(self.registration.showNotification(datos.titulo || '¿Qué comemos hoy?', {
+    body: datos.cuerpo || '',
+    icon: new URL('./icons/icon-192.png', self.location).href,
+    badge: new URL('./icons/logo-blanco.png', self.location).href,
+    tag: datos.etiqueta || 'aviso',
+    data: { url: datos.url || `${PORTADA}#/hoy` },
+  }));
+});
+
+self.addEventListener('notificationclick', (evento) => {
+  evento.notification.close();
+  const url = evento.notification.data?.url || `${PORTADA}#/hoy`;
+  evento.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (ventanas) => {
+      const abierta = ventanas.find((v) => v.url.startsWith(PORTADA));
+      if (abierta) {
+        if ('navigate' in abierta) await abierta.navigate(url).catch(() => {});
+        return abierta.focus();
+      }
+      return self.clients.openWindow(url);
+    }),
   );
 });
