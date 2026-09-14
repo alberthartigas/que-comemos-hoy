@@ -45,6 +45,17 @@ Reglas del sorteo:
 - Entre una semana y otra favorece las recetas que llevan más tiempo sin salir. Las favoritas ❤️ tienen el doble de probabilidad.
 - "Otra opción" cambia una comida sin romper las reglas. Las recetas pausadas no entran al sorteo.
 
+## Favoritas y recetas parecidas
+
+Toca el ❤️ de una receta (en la lista o en su detalle) para marcarla como favorita. Con eso:
+
+- El sorteo le da el doble de probabilidad a las favoritas y hasta 1.5× a las recetas **del mismo estilo** (parecidas por ingredientes principales y etiquetas; la lógica está en `js/similares.js`).
+- Cada receta muestra "Parecidas a esta", y el filtro ❤️ Favoritas muestra "Del mismo estilo que tus favoritas".
+
+## Modo claro y oscuro
+
+El botón redondo de arriba a la derecha cambia entre claro y oscuro; en Ajustes → Apariencia puedes dejarlo en Automático (sigue al celular). La preferencia se guarda en el dispositivo. El logo de la barra superior es una máscara que toma el color del texto, así se ve bien en los dos modos; los íconos de la app son el símbolo en blanco sobre negro (`icons/`, generados desde el logo original).
+
 ## Porciones
 
 Las cantidades de cada receta son para **1 adulto**. De fábrica, cada niño cuenta como el 60 % de un adulto; en Ajustes puedes elegir entre 40 % y 100 %, y hacer la porción de adulto ligera o abundante. Todo se redondea hacia arriba a cantidades que se pueden comprar (huevos enteros, ½ aguacate, gramos de 10 en 10). La lista de compras suma todas las comidas antes de redondear.
