@@ -73,6 +73,12 @@ En Ajustes → Avisos de comida se activa una notificación a la hora de cada co
 
 Cómo funciona: es Web Push estándar con llaves VAPID (sin Firebase ni cuentas). El celular se suscribe y sube al servidor sus horas, su zona horaria y los nombres de los platillos de los próximos 8 días; cada vez que cambia el plan se vuelve a subir. El servicio `appcomidas-ia` guarda las suscripciones en `/var/lib/appcomidas/suscripciones.json`, revisa cada minuto a quién le toca aviso y lo manda; las suscripciones vencidas se borran solas. Las llaves viven en `/etc/appcomidas/push.env` (las genera `subir-al-vps.sh` la primera vez; si se cambian, todos los celulares tienen que volver a activar los avisos). En la APK, la librería TWA entrega las notificaciones a la app (`DelegationService`) y pide el permiso de Android 13+.
 
+## Actualizaciones de la APK
+
+La app no está en Play Store, así que se actualiza sola de esta forma: el envoltorio Android abre la web con `?apk=N` (su `versionCode`, que es el número de corrida de GitHub Actions). La web consulta la última release de GitHub cada 6 horas (respaldo: `version.json` en el dominio, que escribe `subir-apk.sh`) y, si hay una más nueva, la pantalla Hoy muestra "Nueva versión de la app" con **Actualizar** (descarga la APK; al abrirla, Android la instala encima y conserva los datos porque la firma es la misma) o **Ahora no** (vuelve a preguntar en 24 h). En Ajustes se ve la versión instalada y se puede buscar a mano.
+
+Para publicar una versión nueva basta con cambiar algo en `android/` y hacer push (o correr el flujo a mano en Actions): la release aparece en minutos y los celulares la ofrecen solos. El flujo también instala la APK en un emulador Android, la abre con y sin Chrome y guarda capturas y logcat en el artefacto `diagnostico-emulador`; así se detectó el fallo de las versiones 0.1.1–0.1.3.
+
 ## Porciones
 
 Las cantidades de cada receta son para **1 adulto**. De fábrica, cada niño cuenta como el 60 % de un adulto; en Ajustes puedes elegir entre 40 % y 100 %, y hacer la porción de adulto ligera o abundante. Todo se redondea hacia arriba a cantidades que se pueden comprar (huevos enteros, ½ aguacate, gramos de 10 en 10). La lista de compras suma todas las comidas antes de redondear.
