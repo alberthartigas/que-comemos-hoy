@@ -43,12 +43,16 @@ const capitalizar = (texto) => texto.charAt(0).toUpperCase() + texto.slice(1);
 const fmtLargo = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
 const fmtDiaSemana = new Intl.DateTimeFormat(LOCALE, { weekday: 'long' });
 const fmtDiaMes = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' });
+const fmtDiaCorto = new Intl.DateTimeFormat(LOCALE, { weekday: 'short' });
 
 /** "Domingo, 13 de septiembre" */
 export const fechaLarga = (clave) => capitalizar(fmtLargo.format(desdeClave(clave)));
 
 /** "Lunes" */
 export const nombreDia = (clave) => capitalizar(fmtDiaSemana.format(desdeClave(clave)));
+
+/** "Lun" */
+export const nombreDiaCorto = (clave) => capitalizar(fmtDiaCorto.format(desdeClave(clave)).replace(/\.$/, ''));
 
 /** "13 sept – 19 sept" */
 export const rangoFechas = (desde, hasta) => `${fmtDiaMes.format(desdeClave(desde))} – ${fmtDiaMes.format(desdeClave(hasta))}`;
@@ -57,4 +61,12 @@ export const rangoFechas = (desde, hasta) => `${fmtDiaMes.format(desdeClave(desd
 export function rangoSemana(clave) {
   const dias = diasDeSemana(clave);
   return rangoFechas(dias[0], dias[6]);
+}
+
+/** Días a los que se puede agregar una receta: lo que queda de esta semana y toda la próxima. */
+export function diasParaAgregar(hoy) {
+  return {
+    estaSemana: diasDeSemana(hoy).filter((dia) => dia >= hoy),
+    proximaSemana: diasDeSemana(sumarDias(inicioSemana(hoy), 7)),
+  };
 }

@@ -92,8 +92,10 @@ function asignar(plan, fecha, tipo, id) {
 }
 
 /**
- * Llena los espacios vacíos o inválidos de un día (receta borrada, desactivada, que ya no es de ese
- * tipo o repetida en el mismo día). Si no cambia nada devuelve el mismo objeto `plan`.
+ * Llena los espacios vacíos o inválidos de un día (receta borrada, desactivada o repetida en el mismo
+ * día). Una receta puesta a mano en otro momento del día (p. ej. una "comida" como cena) se respeta:
+ * el sorteo solo elige recetas del tipo correcto, así que si no coincide es porque la persona lo quiso.
+ * Si no cambia nada devuelve el mismo objeto `plan`.
  */
 export function completarDia({ recetas, plan, fecha, rng = Math.random }) {
   const porId = new Map(recetas.map((r) => [r.id, r]));
@@ -102,7 +104,7 @@ export function completarDia({ recetas, plan, fecha, rng = Math.random }) {
     const dia = nuevoPlan[fecha] ?? {};
     const id = dia[tipo];
     const receta = porId.get(id);
-    const valida = receta && receta.activa !== false && receta.tipos?.includes(tipo);
+    const valida = receta && receta.activa !== false;
     const repetidaEnElDia = TIPOS.slice(0, i).some((anterior) => dia[anterior] === id);
     if (valida && !repetidaEnElDia) return;
 

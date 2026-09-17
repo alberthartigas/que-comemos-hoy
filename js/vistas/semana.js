@@ -1,11 +1,16 @@
-// Plan de lunes a domingo, con cambio de platillo por espacio.
+// Página principal: calendario de la semana (tira de 7 días + comidas del día elegido).
 
+import { actualizacionDisponible, enApk, posponerActualizacion } from '../actualizaciones.js';
 import { claveFecha, desdeClave, diasDeSemana, inicioSemana, nombreDia, rangoSemana, sumarDias } from '../fechas.js';
 import { TIPOS } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { asegurarSemana, volverASortearSemana } from '../store.js';
-import { plural, toast } from '../util.js';
-import { accionOtraOpcion, filaSlot } from './comun.js';
+import { esc, plural, toast } from '../util.js';
+import { accionOtraOpcion, calendarioSemana, filaSlot } from './comun.js';
+
+let diaSeleccionado = null; // día desplegado en el calendario
+let listaCompleta = false; // mostrar los 7 días completos debajo del calendario
+let actualizacion = null; // release más nueva que la APK instalada (se consulta en alMontar)
 
 function lunesPedido({ params, ahora }) {
   const pedido = params.get('semana');
@@ -16,24 +21,23 @@ export function preparar(ctx) {
   asegurarSemana(lunesPedido(ctx), claveFecha(ctx.ahora));
 }
 
-export function render(ctx) {
-  const { estado, ahora } = ctx;
-  const hoy = claveFecha(ahora);
-  const lunes = lunesPedido(ctx);
-  const lunesActual = inicioSemana(hoy);
-  const porId = new Map(estado.recetas.map((r) => [r.id, r]));
-  const quedanDias = sumarDias(lunes, 6) >= hoy;
-  const nombreSemana = lunes === lunesActual ? 'Esta semana' : lunes > lunesActual ? 'Próxima semana' : 'Semana pasada';
+function avisoActualizacion() {
+  if (!actualizacion) return '';
+  return `<section class="aviso aviso--actualizacion" data-aviso-actualizacion>
+    <strong>📲 Nueva versión de la app (${esc(actualizacion.version)})</strong>
+    <p class="nota">Toca Actualizar, espera la descarga y ábrela desde la notificación para instalarla encima. Tus recetas y tu plan se conservan.</p>
+    <div class="fila-botones">
+      <a class="btn btn--primario" href="${esc(actualizacion.url)}" target="_blank" rel="noopener">Actualizar</a>
+      <button class="btn" type="button" data-accion="posponer">Ahora no</button>
+    </div>
+  </section>`;
+}
 
-  // Los días pasados sin nada planeado (p. ej. antes de empezar a usar la app) no se muestran uno por uno.
+function listaSemana(estado, lunes, hoy) {
+  const porId = new Map(estado.recetas.map((r) => [r.id, r]));
   const conRegistro = (dia) => TIPOS.some((tipo) => porId.has(estado.plan[dia]?.[tipo]));
   const visibles = diasDeSemana(lunes).filter((dia) => dia >= hoy || conRegistro(dia));
-  const ocultos = 7 - visibles.length;
-  const avisoOcultos = !ocultos ? ''
-    : ocultos === 7 ? '<p class="nota">Esta semana no tiene comidas registradas.</p>'
-    : `<p class="nota">${plural(ocultos, 'día anterior', 'días anteriores')} sin registro.</p>`;
-
-  const dias = visibles.map((dia) => {
+  return visibles.map((dia) => {
     const pasado = dia < hoy;
     const clases = ['dia', dia === hoy && 'dia--hoy', pasado && 'dia--pasado'].filter(Boolean).join(' ');
     return `<section class="${clases}">
@@ -43,30 +47,65 @@ export function render(ctx) {
       </div>
     </section>`;
   }).join('');
+}
+
+export function render(ctx) {
+  const { estado, ahora, params } = ctx;
+  const hoy = claveFecha(ahora);
+  const lunes = lunesPedido(ctx);
+  const lunesActual = inicioSemana(hoy);
+  const quedanDias = sumarDias(lunes, 6) >= hoy;
+  const nombreSemana = lunes === lunesActual ? 'Esta semana' : lunes > lunesActual ? 'Próxima semana' : 'Semana pasada';
+  const seleccionado = params.get('dia') ?? diaSeleccionado;
 
   return `
+    ${avisoActualizacion()}
     <header class="encabezado">
-      <h1>Plan de la semana</h1>
-      <p class="subtitulo">Ningún platillo se repite en la semana. Toca las flechas cruzadas para cambiar uno.</p>
+      <h1>${nombreSemana}</h1>
+      <p class="subtitulo">Toca un día para ver sus comidas. Las flechas cruzadas cambian un platillo; en Recetas puedes agregar el que quieras a cualquier día.</p>
     </header>
     <nav class="navegador-semana" aria-label="Cambiar de semana">
       <a class="btn btn--icono" href="#/semana?semana=${sumarDias(lunes, -7)}" aria-label="Semana anterior">${ICONOS.atras}</a>
-      <strong>${rangoSemana(lunes)}<small>${nombreSemana}</small></strong>
+      <strong>${rangoSemana(lunes)}<small>${lunes === lunesActual ? 'Sin repetir platillos' : nombreSemana}</small></strong>
       <a class="btn btn--icono" href="#/semana?semana=${sumarDias(lunes, 7)}" aria-label="Semana siguiente">${ICONOS.adelante}</a>
     </nav>
-    ${avisoOcultos}
-    ${dias}
-    ${quedanDias ? `<div class="acciones-pie">
-      <a class="btn btn--primario" href="#/compras?rango=semana&semana=${lunes}">${ICONOS.carrito} Lista de compras de esta semana</a>
-      <button class="btn" type="button" data-accion="resortear">${ICONOS.aleatorio} Volver a sortear los días que faltan</button>
-    </div>` : ''}`;
+    ${calendarioSemana({ estado, hoy, lunes, seleccionado })}
+    <div class="acciones-pie">
+      ${quedanDias ? `<a class="btn btn--primario" href="#/compras?rango=semana&semana=${lunes}">${ICONOS.carrito} Lista de compras de esta semana</a>` : ''}
+      <a class="btn" href="#/recetas">${ICONOS.libro} Agregar una receta a un día</a>
+      <button class="btn btn--texto" type="button" data-accion="lista-completa">${listaCompleta ? 'Ocultar los 7 días' : 'Ver los 7 días completos'}</button>
+    </div>
+    ${listaCompleta ? `${listaSemana(estado, lunes, hoy)}
+    ${quedanDias ? `<button class="btn" type="button" data-accion="resortear">${ICONOS.aleatorio} Volver a sortear los días que faltan</button>` : ''}` : ''}`;
+}
+
+export function alMontar(_raiz, ctx) {
+  if (!enApk() || actualizacion) return;
+  actualizacionDisponible().then((release) => {
+    if (!release) return;
+    actualizacion = release;
+    if (location.hash.startsWith('#/semana') || location.hash === '') ctx.repintar();
+  });
 }
 
 export const acciones = {
   otra: accionOtraOpcion,
+  dia(boton, ctx) {
+    diaSeleccionado = boton.dataset.fecha;
+    ctx.repintar();
+  },
+  'lista-completa'(_boton, ctx) {
+    listaCompleta = !listaCompleta;
+    ctx.repintar();
+  },
   resortear(_boton, ctx) {
     if (!confirm('¿Volver a sortear de hoy al domingo? Cambiarán las comidas de esos días.')) return;
     volverASortearSemana(lunesPedido(ctx), claveFecha(new Date()));
     toast('Listo, semana sorteada de nuevo 🎲');
+  },
+  posponer(_boton, ctx) {
+    posponerActualizacion(actualizacion.codigo);
+    actualizacion = null;
+    ctx.repintar();
   },
 };

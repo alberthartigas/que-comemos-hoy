@@ -1,6 +1,5 @@
 // Pantalla de inicio: qué toca ahora según la hora y el resto del día.
 
-import { actualizacionDisponible, enApk, posponerActualizacion } from '../actualizaciones.js';
 import { claveFecha, fechaLarga } from '../fechas.js';
 import { INFO_TIPO, TIPOS, saludo, tipoSegunHora } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
@@ -8,7 +7,6 @@ import { asegurarSemana } from '../store.js';
 import { esc, textoPersonas } from '../util.js';
 import { accionOtraOpcion, claseAnimacion, enlaceReceta, enlaceTikTok, filaSlot } from './comun.js';
 
-let actualizacion = null; // release más nueva que la APK instalada (se consulta en alMontar)
 
 export function preparar({ ahora, estado }) {
   const hoy = claveFecha(ahora);
@@ -67,14 +65,6 @@ export function render({ ahora, estado }) {
   const yaPaso = (tipo) => fechaResto === hoy && momento.fecha === hoy && TIPOS.indexOf(tipo) < TIPOS.indexOf(momento.tipo);
 
   return `
-    ${actualizacion ? `<section class="aviso aviso--actualizacion" data-aviso-actualizacion>
-      <strong>📲 Nueva versión de la app (${esc(actualizacion.version)})</strong>
-      <p class="nota">Toca Actualizar, espera la descarga y ábrela desde la notificación para instalarla encima. Tus recetas y tu plan se conservan.</p>
-      <div class="fila-botones">
-        <a class="btn btn--primario" href="${esc(actualizacion.url)}" target="_blank" rel="noopener">Actualizar</a>
-        <button class="btn" type="button" data-accion="posponer">Ahora no</button>
-      </div>
-    </section>` : ''}
     <header class="encabezado">
       <p class="saludo">${saludo(ahora)}</p>
       <h1>${fechaLarga(hoy)}</h1>
@@ -96,24 +86,8 @@ export function render({ ahora, estado }) {
 
     <div class="accesos">
       <a class="acceso" href="#/compras?rango=dia"><span class="acceso__emoji">🛒</span>Compras de hoy<small>Para ${textoPersonas(ajustes)}</small></a>
-      <a class="acceso" href="#/semana"><span class="acceso__emoji">📅</span>Plan de la semana<small>Sin repetir platillos</small></a>
+      <a class="acceso" href="#/semana"><span class="acceso__emoji">📅</span>Calendario<small>Toda la semana</small></a>
     </div>`;
 }
 
-export function alMontar(_raiz, ctx) {
-  if (!enApk() || actualizacion) return;
-  actualizacionDisponible().then((release) => {
-    if (!release) return;
-    actualizacion = release;
-    if (location.hash.startsWith('#/hoy')) ctx.repintar();
-  });
-}
-
-export const acciones = {
-  otra: accionOtraOpcion,
-  posponer(_boton, ctx) {
-    posponerActualizacion(actualizacion.codigo);
-    actualizacion = null;
-    ctx.repintar();
-  },
-};
+export const acciones = { otra: accionOtraOpcion };

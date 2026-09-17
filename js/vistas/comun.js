@@ -1,9 +1,10 @@
 // Piezas que comparten varias pantallas.
 
-import { INFO_TIPO } from '../horarios.js';
+import { claveFecha, desdeClave, diasDeSemana, diasParaAgregar, fechaLarga, nombreDia, nombreDiaCorto } from '../fechas.js';
+import { INFO_TIPO, TIPOS } from '../horarios.js';
 import { estadoIA } from '../ia.js';
 import { ICONOS } from '../iconos.js';
-import { alternarFavorita, obtenerEstado, otraOpcion } from '../store.js';
+import { alternarActiva, alternarFavorita, obtenerEstado, otraOpcion, usarRecetaEn } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
 
@@ -107,4 +108,95 @@ export function mostrarSeccionesIA(raiz) {
     if (!estado.disponible) return;
     for (const seccion of raiz.querySelectorAll('[data-seccion-ia]')) seccion.hidden = false;
   });
+}
+
+/** Botón "Agregar a…" (calendario) para una receta; la acción compartida es accionAgregarA. */
+export function botonAgregarA(receta) {
+  return `<button class="btn btn--icono" type="button" data-accion="agregar-a" data-id="${esc(receta.id)}" aria-label="Agregar ${esc(receta.nombre)} al calendario">${ICONOS.calendario}</button>`;
+}
+
+export function accionAgregarA(boton, ctx) {
+  const receta = obtenerEstado().recetas.find((r) => r.id === boton.dataset.id);
+  if (!receta) return;
+  abrirSelectorCalendario(receta, { fecha: ctx?.params?.get('fecha'), tipo: ctx?.params?.get('tipo') });
+}
+
+/**
+ * Hoja inferior para elegir día (lo que queda de esta semana y la próxima) y comida.
+ * Al confirmar pone la receta en ese espacio del plan (si ya había otra, la reemplaza).
+ */
+export function abrirSelectorCalendario(receta, { fecha, tipo } = {}) {
+  const hoy = claveFecha();
+  const { estaSemana, proximaSemana } = diasParaAgregar(hoy);
+  const fechaInicial = fecha && fecha >= hoy && [...estaSemana, ...proximaSemana].includes(fecha) ? fecha : hoy;
+  const tipoInicial = TIPOS.includes(tipo) ? tipo : receta.tipos[0] ?? 'comida';
+
+  let hoja = document.getElementById('selector-calendario');
+  if (!hoja) {
+    hoja = document.createElement('dialog');
+    hoja.id = 'selector-calendario';
+    hoja.className = 'hoja';
+    document.body.append(hoja);
+  }
+  const chipDia = (dia) => `<label class="opcion opcion--dia"><input type="radio" name="fecha" value="${dia}"${dia === fechaInicial ? ' checked' : ''}><span><small>${nombreDiaCorto(dia)}</small><strong>${desdeClave(dia).getDate()}</strong></span></label>`;
+  hoja.innerHTML = `<form method="dialog" class="hoja__contenido" aria-label="Agregar al calendario">
+    <span class="hoja__asa"></span>
+    <h2>📅 Agregar al calendario</h2>
+    <p class="hoja__receta"><span class="emoji-caja">${esc(receta.emoji)}</span><strong>${esc(receta.nombre)}</strong></p>
+    <p class="campo__titulo">¿Qué día?</p>
+    <p class="nota">Esta semana</p>
+    <div class="opciones">${estaSemana.map(chipDia).join('')}</div>
+    <p class="nota">Próxima semana</p>
+    <div class="opciones">${proximaSemana.map(chipDia).join('')}</div>
+    <p class="campo__titulo">¿En cuál comida?</p>
+    <div class="opciones">${TIPOS.map((t) => `<label class="opcion"><input type="radio" name="tipo" value="${t}"${t === tipoInicial ? ' checked' : ''}><span>${INFO_TIPO[t].emoji} ${INFO_TIPO[t].nombre}</span></label>`).join('')}</div>
+    <div class="fila-botones">
+      <button class="btn" type="button" data-cerrar>Cancelar</button>
+      <button class="btn btn--primario" type="submit">Agregar</button>
+    </div>
+  </form>`;
+
+  const form = hoja.querySelector('form');
+  hoja.querySelector('[data-cerrar]').onclick = () => hoja.close();
+  hoja.onclick = (evento) => {
+    if (evento.target === hoja) hoja.close(); // toque fuera de la hoja
+  };
+  form.onsubmit = (evento) => {
+    const datos = new FormData(form);
+    const dia = datos.get('fecha');
+    const comida = datos.get('tipo');
+    if (!dia || !comida) {
+      evento.preventDefault();
+      return;
+    }
+    if (!receta.activa) alternarActiva(receta.id);
+    usarRecetaEn(dia, comida, receta.id);
+    toast(`${receta.nombre} → ${nombreDia(dia)} ${desdeClave(dia).getDate()}, ${INFO_TIPO[comida].nombre.toLowerCase()}`);
+  };
+  hoja.showModal();
+}
+
+/**
+ * Calendario de una semana (lunes a domingo): tira de 7 días con los emojis de sus tres comidas y,
+ * debajo, las comidas del día elegido. `lunes` es el inicio de la semana que se muestra.
+ */
+export function calendarioSemana({ estado, hoy, lunes, seleccionado }) {
+  const porId = new Map(estado.recetas.map((r) => [r.id, r]));
+  const dias = diasDeSemana(lunes ?? hoy);
+  const sel = dias.includes(seleccionado) ? seleccionado : dias.includes(hoy) ? hoy : dias[0];
+  const tira = dias.map((dia) => {
+    const clases = ['cal-dia', dia === hoy && 'cal-dia--hoy', dia === sel && 'cal-dia--activo', dia < hoy && 'cal-dia--pasado'].filter(Boolean).join(' ');
+    const emojis = TIPOS.map((t) => porId.get(estado.plan[dia]?.[t])?.emoji ?? '·');
+    return `<button class="${clases}" type="button" role="tab" aria-selected="${dia === sel}" data-accion="dia" data-fecha="${dia}" aria-label="${nombreDia(dia)} ${desdeClave(dia).getDate()}">
+      <small>${nombreDiaCorto(dia)}</small><strong>${desdeClave(dia).getDate()}</strong>
+      <span class="cal-dia__emojis">${emojis.map((e) => `<span>${esc(e)}</span>`).join('')}</span>
+    </button>`;
+  }).join('');
+  return `<div class="calendario" aria-label="Calendario de la semana">
+    <div class="cal-tira" role="tablist">${tira}</div>
+    <p class="calendario__titulo">${fechaLarga(sel)}${sel === hoy ? ' · Hoy' : ''}</p>
+    <div class="slots">
+      ${TIPOS.map((t) => filaSlot({ receta: porId.get(estado.plan[sel]?.[t]), fecha: sel, tipo: t, pasada: sel < hoy })).join('')}
+    </div>
+  </div>`;
 }

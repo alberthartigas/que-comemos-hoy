@@ -29,14 +29,14 @@ let hashPintado = null;
 
 function leerRuta() {
   const [camino = '', consulta = ''] = location.hash.replace(/^#\/?/, '').split('?');
-  const [nombre = 'hoy', ...args] = camino.split('/').filter(Boolean).map((parte) => {
+  const [nombre = 'semana', ...args] = camino.split('/').filter(Boolean).map((parte) => {
     try {
       return decodeURIComponent(parte);
     } catch {
       return parte;
     }
   });
-  return { nombre: VISTAS[nombre] ? nombre : 'hoy', args, params: new URLSearchParams(consulta) };
+  return { nombre: VISTAS[nombre] ? nombre : 'semana', args, params: new URLSearchParams(consulta) };
 }
 
 function navegar(hash, { reemplazar = false } = {}) {
@@ -50,6 +50,8 @@ function navegar(hash, { reemplazar = false } = {}) {
 
 function pintar() {
   const ruta = leerRuta();
+  // La hoja "Agregar al calendario" vive fuera de la vista: al cambiar de pantalla se cierra.
+  document.getElementById('selector-calendario')?.close();
   const vista = VISTAS[ruta.nombre];
   const esNuevaRuta = location.hash !== hashPintado;
   hashPintado = location.hash;
@@ -128,7 +130,7 @@ alCambiarTema(pintarBotonTema);
 aplicarTema();
 
 window.addEventListener('hashchange', pintar);
-if (!location.hash) history.replaceState(null, '', '#/hoy');
+if (!location.hash) history.replaceState(null, '', '#/semana');
 pintar();
 
 if (errorDeGuardado()) toast(errorDeGuardado());

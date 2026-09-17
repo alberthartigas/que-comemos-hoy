@@ -6,10 +6,10 @@ import { variantesDe } from '../ia.js';
 import { ICONOS } from '../iconos.js';
 import { escalarIngredientes, porcionesTotales } from '../porciones.js';
 import { recetasParecidas } from '../similares.js';
-import { alternarActiva, guardarReceta, nuevoIdReceta, usarRecetaEn } from '../store.js';
+import { alternarActiva, guardarReceta, nuevoIdReceta } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { autorTikTok, esc, toast } from '../util.js';
-import { accionFavorita, botonFavorita, listaMini, mostrarSeccionesIA, regresar, stepperPersonas } from './comun.js';
+import { abrirSelectorCalendario, accionAgregarA, accionFavorita, botonFavorita, listaMini, mostrarSeccionesIA, regresar, stepperPersonas } from './comun.js';
 
 // Adultos y niños solo para esta receta (no cambia los ajustes de la casa).
 let personas = null;
@@ -128,11 +128,9 @@ export function render(ctx) {
     ${seccionVariantes(receta)}
 
     <section class="tarjeta">
-      <h2>📅 Cocinarla hoy</h2>
-      <p class="nota">Ponla en el plan de hoy en lugar de la sugerencia:</p>
-      <div class="fila-botones">
-        ${receta.tipos.map((t) => `<button class="btn" type="button" data-accion="usar" data-tipo="${t}">${INFO_TIPO[t].emoji} ${INFO_TIPO[t].nombre}</button>`).join('')}
-      </div>
+      <h2>📅 Agregar al calendario</h2>
+      <p class="nota">Elige el día y si va de desayuno, comida o cena. Así aparece en el calendario de la semana.</p>
+      <button class="btn btn--primario btn--bloque" type="button" data-accion="agregar-a" data-id="${esc(receta.id)}">${ICONOS.calendario} Agregar a un día</button>
       <label class="interruptor">
         <span>Entra al sorteo de sugerencias</span>
         <input type="checkbox" data-cambio="activa"${receta.activa ? ' checked' : ''}>
@@ -149,8 +147,13 @@ function cambiarPersonas(campo, cambio, ctx) {
   ctx.repintar();
 }
 
-export function alMontar(raiz) {
+export function alMontar(raiz, ctx) {
   mostrarSeccionesIA(raiz);
+  if (ctx.params.get('agregar')) {
+    history.replaceState(null, '', `#/receta/${encodeURIComponent(ctx.args[0])}`);
+    const receta = recetaActual(ctx);
+    if (receta) abrirSelectorCalendario(receta, { fecha: ctx.params.get('fecha'), tipo: ctx.params.get('tipo') });
+  }
 }
 
 export const acciones = {
@@ -179,14 +182,7 @@ export const acciones = {
   favorita: accionFavorita,
   mas: (boton, ctx) => cambiarPersonas(boton.dataset.campo, 1, ctx),
   menos: (boton, ctx) => cambiarPersonas(boton.dataset.campo, -1, ctx),
-  usar(boton, ctx) {
-    const receta = recetaActual(ctx);
-    if (!receta) return;
-    const info = INFO_TIPO[boton.dataset.tipo];
-    if (!receta.activa) alternarActiva(receta.id);
-    usarRecetaEn(claveFecha(new Date()), boton.dataset.tipo, receta.id);
-    toast(`Listo: es ${info.articulo} ${info.nombre.toLowerCase()} de hoy`);
-  },
+  'agregar-a': accionAgregarA,
 };
 
 export const cambios = {

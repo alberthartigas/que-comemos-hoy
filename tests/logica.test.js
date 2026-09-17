@@ -238,3 +238,20 @@ test('actualizaciones: código de versión a partir de la etiqueta de la release
   assert.equal(codigoDeEtiqueta('0.2.3'), 3);
   assert.equal(codigoDeEtiqueta('rara'), 0);
 });
+
+test('calendario: días para agregar y nombre corto', async () => {
+  const { diasParaAgregar, nombreDiaCorto } = await import('../js/fechas.js');
+  const { estaSemana, proximaSemana } = diasParaAgregar('2026-09-16'); // miércoles
+  assert.deepEqual(estaSemana, ['2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19', '2026-09-20']);
+  assert.deepEqual([proximaSemana[0], proximaSemana.at(-1), proximaSemana.length], ['2026-09-21', '2026-09-27', 7]);
+  assert.deepEqual(diasParaAgregar('2026-09-13').estaSemana, ['2026-09-13'], 'el domingo solo queda el domingo');
+  assert.match(nombreDiaCorto('2026-09-14'), /^Lun/);
+});
+
+test('una receta puesta a mano en otro momento del día se respeta', () => {
+  const plan = fijarReceta({ plan: {}, fecha: '2026-09-27', tipo: 'cena', id: 'arroz-pollo' }); // arroz-pollo es solo "comida"
+  const completo = completarDia({ recetas: RECETAS_BASE, plan, fecha: '2026-09-27', rng: azarConSemilla(2) });
+  assert.equal(completo['2026-09-27'].cena, 'arroz-pollo');
+  assert.ok(completo['2026-09-27'].desayuno && completo['2026-09-27'].comida);
+  assert.notEqual(completo['2026-09-27'].comida, 'arroz-pollo', 'no se repite en el mismo día');
+});

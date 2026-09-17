@@ -29,6 +29,12 @@ La primera vez, macOS puede preguntar si Node puede aceptar conexiones entrantes
 
 **Instalarla como app:** en iPhone (Safari) toca Compartir → "Agregar a inicio". En Android (Chrome) toca ⋮ → "Agregar a la pantalla principal".
 
+## Calendario de la semana y "Agregar a…"
+
+La página principal es **Semana**: una tira de lunes a domingo con los emojis de las tres comidas de cada día; tocas un día y abajo aparecen su desayuno, comida y cena (con "otra opción" en cada una). Las flechas cambian de semana y "Ver los 7 días completos" despliega la lista entera. **Hoy** es la pantalla secundaria: la comida que toca ahora según la hora y el resto del día.
+
+En **Recetas** (lista y detalle) cada receta tiene el botón 📅 **Agregar a…**: abre una hoja para elegir el día (lo que queda de esta semana y toda la próxima) y si va de desayuno, comida o cena. La receta queda en ese espacio del calendario aunque no sea de ese tipo (la elección manual se respeta) y, si ya había otra, la reemplaza.
+
 ## Cómo decide qué toca
 
 | Horario (se cambia en Ajustes) | Sugiere |

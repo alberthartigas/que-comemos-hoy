@@ -3,7 +3,7 @@
   "short_name": "¿Qué comemos?",
   "description": "Sugerencias al azar de desayuno, comida y cena, con ingredientes por persona y video de TikTok.",
   "lang": "es-MX",
-  "start_url": "./#/hoy",
+  "start_url": "./#/semana",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

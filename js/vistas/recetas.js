@@ -5,7 +5,7 @@ import { ICONOS } from '../iconos.js';
 import { normalizarTexto } from '../porciones.js';
 import { delEstiloDeFavoritas } from '../similares.js';
 import { esc } from '../util.js';
-import { accionFavorita, botonFavorita, listaMini } from './comun.js';
+import { accionAgregarA, accionFavorita, botonAgregarA, botonFavorita, listaMini } from './comun.js';
 
 const FILTROS = [
   { id: 'todas', nombre: 'Todas' },
@@ -53,6 +53,7 @@ export function render({ estado, params }) {
               <small>${r.tipos.map((t) => INFO_TIPO[t].nombre).join(' · ')}${r.minutos ? ` · ${r.minutos} min` : ''}${r.activa ? '' : ' · pausada'}</small>
             </span>
           </a>
+          ${botonAgregarA(r)}
           ${botonFavorita(r)}
         </div>
       </li>`).join('')}
@@ -83,7 +84,7 @@ export function alMontar(raiz) {
   if (consulta) filtrarLista(raiz);
 }
 
-export const acciones = { favorita: accionFavorita };
+export const acciones = { favorita: accionFavorita, 'agregar-a': accionAgregarA };
 
 export const entradas = {
   buscar(campo) {
