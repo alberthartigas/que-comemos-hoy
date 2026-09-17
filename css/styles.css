@@ -357,7 +357,7 @@ a.chip { align-self: flex-start; }
 .slot--comida { border-left-color: var(--comida-acento); }
 .slot--cena { border-left-color: var(--cena-acento); }
 .slot--pasada { opacity: 0.6; }
-.slot__receta { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 2px 0; }
+.slot__receta { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 2px 0; border: 0; background: transparent; text-align: left; font: inherit; color: inherit; }
 .emoji-caja {
   display: grid;
   place-items: center;
@@ -428,6 +428,13 @@ a.chip { align-self: flex-start; }
 .hoja__contenido .fila-botones { margin-top: 8px; }
 .hoja__asa { width: 40px; height: 5px; margin: 0 auto 2px; border-radius: 99px; background: var(--borde); }
 .hoja__receta { display: flex; align-items: center; gap: 10px; }
+.hoja__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hoja__estado { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--superficie-2); font-size: 15px; line-height: 1.4; }
+.hoja__contenido .tarjeta { padding: 14px; box-shadow: none; background: var(--superficie-2); }
+.hoja__contenido .tarjeta h2 { font-size: 16px; }
+.girando { flex: none; width: 20px; height: 20px; border: 3px solid var(--borde); border-top-color: var(--primario); border-radius: 50%; animation: girar 0.8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .girando { animation-duration: 2s; } }
 .opcion--dia span { flex-direction: column; gap: 0; min-width: 54px; padding: 7px 10px; line-height: 1.15; }
 .opcion--dia small { font-size: 11px; font-weight: 700; text-transform: uppercase; }
 

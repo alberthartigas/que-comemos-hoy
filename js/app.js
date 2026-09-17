@@ -15,6 +15,7 @@ import * as hoy from './vistas/hoy.js';
 import * as receta from './vistas/receta.js';
 import * as recetas from './vistas/recetas.js';
 import * as semana from './vistas/semana.js';
+import { cerrarHoja } from './vistas/hoja.js';
 
 const VISTAS = { hoy, semana, compras, recetas, receta, nueva: formulario, editar: formulario, ajustes };
 const PESTANA_DE = { receta: 'recetas', nueva: 'recetas', editar: 'recetas' };
@@ -50,11 +51,10 @@ function navegar(hash, { reemplazar = false } = {}) {
 
 function pintar() {
   const ruta = leerRuta();
-  // La hoja "Agregar al calendario" vive fuera de la vista: al cambiar de pantalla se cierra.
-  document.getElementById('selector-calendario')?.close();
   const vista = VISTAS[ruta.nombre];
   const esNuevaRuta = location.hash !== hashPintado;
-  hashPintado = location.hash;
+  // Las hojas (compras del día, agregar receta…) viven fuera de la vista: al cambiar de pantalla se cierran.
+  if (esNuevaRuta) cerrarHoja();
 
   pintando = true;
   try {
@@ -65,6 +65,8 @@ function pintar() {
     raiz.innerHTML = vista.render(ctx);
     actual = { vista, ctx };
     vista.alMontar?.(raiz, ctx);
+    // alMontar puede limpiar parámetros de la URL (replaceState): se toma la versión final.
+    hashPintado = location.hash;
   } finally {
     pintando = false;
   }

@@ -33,6 +33,10 @@ La primera vez, macOS puede preguntar si Node puede aceptar conexiones entrantes
 
 La página principal es **Semana**: una tira de lunes a domingo con los emojis de las tres comidas de cada día; tocas un día y abajo aparecen su desayuno, comida y cena (con "otra opción" en cada una). Las flechas cambian de semana y "Ver los 7 días completos" despliega la lista entera. **Hoy** es la pantalla secundaria: la comida que toca ahora según la hora y el resto del día.
 
+En cada comida del calendario hay dos botones: ⇄ **otra opción** (el sorteo propone otro platillo) y ➕ **agregar propia receta**: escribes el nombre del platillo y la app busca la receta con IA (ingredientes para 1 adulto y pasos) y un video de TikTok de referencia, mostrando "Buscando…", y la deja en ese día y comida. El botón **Lista de compras de hoy** (o "Compras del jueves 17", según el día elegido) abre una hoja que sube desde abajo con las compras solo de ese día, con palomitas compartidas con la pestaña Hoy/Mañana de Compras y un enlace a la semana completa.
+
+Para que la búsqueda del video de TikTok funcione hace falta una clave de buscador (gratuita) en el servidor: `SERPER_API_KEY` (serper.dev, 2,500 búsquedas gratis) o `BRAVE_API_KEY` en `/etc/appcomidas/ia.env`, y `systemctl restart appcomidas-ia`. Sin clave, la receta se agrega igual y su botón TikTok abre la búsqueda del platillo. (DuckDuckGo, Brave sin clave y Bing bloquean o no responden desde el servidor, y el modelo con búsqueda de Groq excede el límite gratuito.)
+
 En **Recetas** (lista y detalle) cada receta tiene el botón 📅 **Agregar a…**: abre una hoja para elegir el día (lo que queda de esta semana y toda la próxima) y si va de desayuno, comida o cena. La receta queda en ese espacio del calendario aunque no sea de ese tipo (la elección manual se respeta) y, si ya había otra, la reemplaza.
 
 ## Cómo decide qué toca

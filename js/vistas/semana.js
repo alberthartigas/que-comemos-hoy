@@ -7,10 +7,13 @@ import { ICONOS } from '../iconos.js';
 import { asegurarSemana, volverASortearSemana } from '../store.js';
 import { esc, plural, toast } from '../util.js';
 import { accionOtraOpcion, calendarioSemana, filaSlot } from './comun.js';
+import { abrirComprasDelDia } from './compras-hoja.js';
+import { abrirHojaRecetaPropia } from './receta-propia-hoja.js';
 
 let diaSeleccionado = null; // día desplegado en el calendario
 let listaCompleta = false; // mostrar los 7 días completos debajo del calendario
 let actualizacion = null; // release más nueva que la APK instalada (se consulta en alMontar)
+let selActual = null; // día mostrado en el último pintado
 
 function lunesPedido({ params, ahora }) {
   const pedido = params.get('semana');
@@ -43,7 +46,7 @@ function listaSemana(estado, lunes, hoy) {
     return `<section class="${clases}">
       <h2 class="dia__titulo">${nombreDia(dia)} ${desdeClave(dia).getDate()}${dia === hoy ? ' <span class="chip chip--comida">Hoy</span>' : ''}</h2>
       <div class="slots">
-        ${TIPOS.map((tipo) => filaSlot({ receta: porId.get(estado.plan[dia]?.[tipo]), fecha: dia, tipo, pasada: pasado })).join('')}
+        ${TIPOS.map((tipo) => filaSlot({ receta: porId.get(estado.plan[dia]?.[tipo]), fecha: dia, tipo, pasada: pasado, conAgregar: true })).join('')}
       </div>
     </section>`;
   }).join('');
@@ -56,23 +59,26 @@ export function render(ctx) {
   const lunesActual = inicioSemana(hoy);
   const quedanDias = sumarDias(lunes, 6) >= hoy;
   const nombreSemana = lunes === lunesActual ? 'Esta semana' : lunes > lunesActual ? 'Próxima semana' : 'Semana pasada';
-  const seleccionado = params.get('dia') ?? diaSeleccionado;
+  const dias = diasDeSemana(lunes);
+  const pedido = params.get('dia') ?? diaSeleccionado;
+  const sel = dias.includes(pedido) ? pedido : dias.includes(hoy) ? hoy : dias[0];
+  selActual = sel;
 
   return `
     ${avisoActualizacion()}
     <header class="encabezado">
       <h1>${nombreSemana}</h1>
-      <p class="subtitulo">Toca un día para ver sus comidas. Las flechas cruzadas cambian un platillo; en Recetas puedes agregar el que quieras a cualquier día.</p>
+      <p class="subtitulo">Toca un día para ver sus comidas. En cada comida: ⇄ otra opción del sorteo y ➕ agregar tu propia receta.</p>
     </header>
     <nav class="navegador-semana" aria-label="Cambiar de semana">
       <a class="btn btn--icono" href="#/semana?semana=${sumarDias(lunes, -7)}" aria-label="Semana anterior">${ICONOS.atras}</a>
       <strong>${rangoSemana(lunes)}<small>${lunes === lunesActual ? 'Sin repetir platillos' : nombreSemana}</small></strong>
       <a class="btn btn--icono" href="#/semana?semana=${sumarDias(lunes, 7)}" aria-label="Semana siguiente">${ICONOS.adelante}</a>
     </nav>
-    ${calendarioSemana({ estado, hoy, lunes, seleccionado })}
+    ${calendarioSemana({ estado, hoy, lunes, seleccionado: sel, conAgregar: true })}
     <div class="acciones-pie">
-      ${quedanDias ? `<a class="btn btn--primario" href="#/compras?rango=semana&semana=${lunes}">${ICONOS.carrito} Lista de compras de esta semana</a>` : ''}
-      <a class="btn" href="#/recetas">${ICONOS.libro} Agregar una receta a un día</a>
+      <button class="btn btn--primario" type="button" data-accion="compras-dia">${ICONOS.carrito} ${sel === hoy ? 'Lista de compras de hoy' : `Compras del ${nombreDia(sel).toLowerCase()} ${desdeClave(sel).getDate()}`}</button>
+      <a class="btn" href="#/recetas">${ICONOS.libro} Elegir una receta guardada</a>
       <button class="btn btn--texto" type="button" data-accion="lista-completa">${listaCompleta ? 'Ocultar los 7 días' : 'Ver los 7 días completos'}</button>
     </div>
     ${listaCompleta ? `${listaSemana(estado, lunes, hoy)}
@@ -80,6 +86,17 @@ export function render(ctx) {
 }
 
 export function alMontar(_raiz, ctx) {
+  // Enlaces directos: #/semana?compras=1 abre las compras del día; #/semana?propia=comida abre "Agregar mi receta".
+  const { params } = ctx;
+  if (params.has('compras') || params.has('propia')) {
+    const limpios = new URLSearchParams(params);
+    limpios.delete('compras');
+    const propia = limpios.get('propia');
+    limpios.delete('propia');
+    history.replaceState(null, '', `#/semana${limpios.size ? `?${limpios}` : ''}`);
+    if (params.has('compras')) abrirComprasDelDia(selActual);
+    else if (TIPOS.includes(propia)) abrirHojaRecetaPropia({ fecha: selActual, tipo: propia });
+  }
   if (!enApk() || actualizacion) return;
   actualizacionDisponible().then((release) => {
     if (!release) return;
@@ -93,6 +110,12 @@ export const acciones = {
   dia(boton, ctx) {
     diaSeleccionado = boton.dataset.fecha;
     ctx.repintar();
+  },
+  'compras-dia'() {
+    abrirComprasDelDia(selActual);
+  },
+  'agregar-propia'(boton) {
+    abrirHojaRecetaPropia({ fecha: boton.dataset.fecha, tipo: boton.dataset.tipo });
   },
   'lista-completa'(_boton, ctx) {
     listaCompleta = !listaCompleta;

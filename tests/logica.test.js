@@ -255,3 +255,15 @@ test('una receta puesta a mano en otro momento del día se respeta', () => {
   assert.ok(completo['2026-09-27'].desayuno && completo['2026-09-27'].comida);
   assert.notEqual(completo['2026-09-27'].comida, 'arroz-pollo', 'no se repite en el mismo día');
 });
+
+test('compras del día: clave compartida y lista armada', async () => {
+  const { armarListaDias, avance, claveListaDia, textoParaCompartir } = await import('../js/vistas/compras-lista.js');
+  const recetas = RECETAS_BASE.slice(0, 3);
+  const estado = { recetas, ajustes: { adultos: 2, ninos: 1, factorAdulto: 1, factorNino: 0.6 }, plan: { '2026-09-16': { desayuno: recetas[0].id, comida: recetas[1].id } }, compras: {} };
+  assert.equal(claveListaDia('2026-09-16'), 'dia:2026-09-16');
+  const lista = armarListaDias(estado, ['2026-09-16'], claveListaDia('2026-09-16'), 'Hoy');
+  assert.equal(lista.entradas.length, 2);
+  assert.ok(lista.grupos.length >= 2);
+  assert.equal(avance(lista).enCarrito, 0);
+  assert.match(textoParaCompartir(lista), /🛒 Lista de compras\nHoy\nPara 2 adultos y 1 niño/);
+});

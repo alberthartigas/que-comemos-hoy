@@ -2,7 +2,7 @@
 // Node (ia/servidor.js en el VPS, server.js en local) y la app web le habla por /api/ia/.
 
 import { TIPOS } from '../js/horarios.js';
-import { UNIDADES } from '../js/porciones.js';
+import { UNIDADES, normalizarTexto } from '../js/porciones.js';
 import { ETIQUETAS, sanearReceta } from '../js/recetas.js';
 
 const URL_GROQ = 'https://api.groq.com/openai/v1/chat/completions';
@@ -56,15 +56,15 @@ export function extraerJSON(texto) {
 }
 
 /** Llama a Groq probando los modelos en orden; devuelve el JSON que respondió el modelo. */
-export async function completarJSON({ apiKey, usuario, sistema = SISTEMA, maxTokens = 2500, modelos = MODELOS }) {
+export async function completarJSON({ apiKey, usuario, sistema = SISTEMA, maxTokens = 2500, modelos = MODELOS, formatoJSON = true, temperatura = 0.7 }) {
   let ultimoError = null;
   for (const modelo of modelos) {
     const cuerpo = {
       model: modelo,
       messages: [{ role: 'system', content: sistema }, { role: 'user', content: usuario }],
-      temperature: 0.7,
+      temperature: temperatura,
       max_tokens: maxTokens,
-      response_format: { type: 'json_object' },
+      ...(formatoJSON ? { response_format: { type: 'json_object' } } : {}),
       ...(modelo.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
     };
     let respuesta;
@@ -89,7 +89,7 @@ export async function completarJSON({ apiKey, usuario, sistema = SISTEMA, maxTok
     }
     const contenido = datos?.choices?.[0]?.message?.content ?? '';
     try {
-      return { modelo, json: extraerJSON(contenido) };
+      return { modelo, json: extraerJSON(contenido), contenido };
     } catch (error) {
       ultimoError = error;
     }
@@ -137,6 +137,87 @@ export async function recetaDesdeTikTok({ url, nombre, apiKey }) {
   const { modelo, json } = await completarJSON({ apiKey, usuario });
   if (json.error) throw Object.assign(new Error(String(json.error)), { estado: 422 });
   return { receta: limpiarRecetaIA(json, { tiktok: url }), fuente: info, modelo };
+}
+
+/** Receta completa a partir del nombre del platillo (y el momento del día en que se va a servir). */
+export async function recetaDesdeNombre({ nombre, tipo, apiKey }) {
+  const usuario = [
+    `Platillo: ${nombre}`,
+    TIPOS.includes(tipo) ? `Se va a servir de ${tipo}: incluye "${tipo}" en "tipos".` : '',
+    'Escribe la receta casera completa de ese platillo con el formato indicado.',
+    'Si el texto no es un platillo reconocible, responde exactamente {"error": "No reconozco ese platillo; escribe el nombre de una comida"}.',
+  ].filter(Boolean).join('\n');
+  const { modelo, json } = await completarJSON({ apiKey, usuario });
+  if (json.error) throw Object.assign(new Error(String(json.error)), { estado: 422 });
+  const receta = limpiarRecetaIA(json);
+  if (TIPOS.includes(tipo) && !receta.tipos.includes(tipo)) receta.tipos.push(tipo);
+  return { receta, modelo };
+}
+
+const PATRON_VIDEO = /https?:\/\/(?:www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
+const UA_NAVEGADOR = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
+
+// Buscadores. Serper (google.serper.dev) y Brave (api.search.brave.com) tienen plan gratuito y
+// necesitan clave (SERPER_API_KEY / BRAVE_API_KEY en /etc/appcomidas/ia.env). Bing RSS va sin clave
+// pero casi nunca devuelve resultados desde un servidor; se intenta al final por si acaso.
+async function buscarConSerper(consulta, clave) {
+  const r = await fetch('https://google.serper.dev/search', {
+    method: 'POST', headers: { 'X-API-KEY': clave, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: consulta, gl: 'mx', hl: 'es', num: 10 }), signal: AbortSignal.timeout(12_000),
+  });
+  if (!r.ok) throw new Error(`Serper ${r.status}`);
+  const datos = await r.json();
+  return (datos.organic ?? []).map((o) => o.link);
+}
+async function buscarConBrave(consulta, clave) {
+  const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(consulta)}&count=10&country=MX&search_lang=es`;
+  const r = await fetch(url, { headers: { Accept: 'application/json', 'X-Subscription-Token': clave }, signal: AbortSignal.timeout(12_000) });
+  if (!r.ok) throw new Error(`Brave ${r.status}`);
+  const datos = await r.json();
+  return (datos.web?.results ?? []).map((o) => o.url);
+}
+async function buscarEnBing(consulta) {
+  const r = await fetch(`https://www.bing.com/search?format=rss&q=${encodeURIComponent(consulta)}`, { headers: { 'User-Agent': UA_NAVEGADOR }, signal: AbortSignal.timeout(12_000) });
+  if (!r.ok) throw new Error(`Bing ${r.status}`);
+  return [...(await r.text()).matchAll(new RegExp(PATRON_VIDEO.source, 'gi'))].map((m) => m[0]);
+}
+
+/**
+ * Busca un video de TikTok con la receta y lo verifica con el oEmbed de TikTok (que exista y que su
+ * título hable del platillo). Devuelve { url, titulo, autor } o { url: null, motivo }.
+ */
+export async function buscarVideoTikTok({ nombre, busqueda = {} }) {
+  const consulta = `site:tiktok.com receta ${nombre}`;
+  const proveedores = [
+    busqueda.serper && (() => buscarConSerper(consulta, busqueda.serper)),
+    busqueda.brave && (() => buscarConBrave(consulta, busqueda.brave)),
+    () => buscarEnBing(consulta),
+  ].filter(Boolean);
+  const candidatos = new Set();
+  const fallas = [];
+  for (const buscar of proveedores) {
+    try {
+      for (const enlace of await buscar()) {
+        const m = String(enlace).match(PATRON_VIDEO);
+        if (m) candidatos.add(m[0]);
+      }
+    } catch (error) {
+      fallas.push(error.message);
+    }
+    if (candidatos.size >= 3) break;
+  }
+  const palabras = normalizarTexto(nombre).split(' ').filter((p) => p.length > 3);
+  let primero = null;
+  for (const url of [...candidatos].slice(0, 6)) {
+    const info = await infoTikTok(url);
+    if (!info) continue;
+    const titulo = normalizarTexto(info.titulo);
+    if (palabras.some((p) => titulo.includes(p))) return { url, ...info };
+    primero ??= { url, ...info };
+  }
+  if (primero) return primero;
+  const sinBuscador = !busqueda.serper && !busqueda.brave;
+  return { url: null, motivo: sinBuscador ? 'Sin buscador configurado (SERPER_API_KEY o BRAVE_API_KEY).' : fallas[0] ?? 'No se encontró un video verificado.' };
 }
 
 export async function variantesDeReceta({ receta, existentes = [], cuantas = 3, apiKey }) {
@@ -187,7 +268,7 @@ function responderJSON(res, estado, datos) {
  * Crea el manejador. `ruta` llega sin prefijo ("estado", "receta-tiktok", "variantes").
  * `origenes`: orígenes permitidos (vacío = no se revisa, para desarrollo local).
  */
-export function crearManejadorIA({ apiKey, origenes = [] }) {
+export function crearManejadorIA({ apiKey, origenes = [], busqueda = {} }) {
   const porIp = new Map();
   let usoDia = { dia: '', n: 0 };
 
@@ -222,7 +303,7 @@ export function crearManejadorIA({ apiKey, origenes = [] }) {
 
   return async function manejarIA(req, res, ruta) {
     if (ruta === 'estado') return responderJSON(res, 200, { disponible: Boolean(apiKey), modelos: apiKey ? MODELOS : [] });
-    if (!['receta-tiktok', 'variantes'].includes(ruta)) return responderJSON(res, 404, { error: 'Ruta no encontrada.' });
+    if (!['receta-tiktok', 'receta-nombre', 'buscar-tiktok', 'variantes'].includes(ruta)) return responderJSON(res, 404, { error: 'Ruta no encontrada.' });
     if (req.method !== 'POST') return responderJSON(res, 405, { error: 'Usa POST.' });
     if (!apiKey) return responderJSON(res, 503, { error: 'La IA no está configurada en este servidor.' });
     if (!origenPermitido(req)) return responderJSON(res, 403, { error: 'Origen no permitido.' });
@@ -236,6 +317,12 @@ export function crearManejadorIA({ apiKey, origenes = [] }) {
         if (!/^https:\/\/([a-z0-9-]+\.)*tiktok\.com\//i.test(url)) return responderJSON(res, 400, { error: 'Pega un enlace de tiktok.com.' });
         const nombre = String(cuerpo.nombre ?? '').trim().slice(0, 80);
         return responderJSON(res, 200, await recetaDesdeTikTok({ url, nombre, apiKey }));
+      }
+      if (ruta === 'receta-nombre' || ruta === 'buscar-tiktok') {
+        const nombre = String(cuerpo.nombre ?? '').trim().slice(0, 80);
+        if (nombre.length < 3) return responderJSON(res, 400, { error: 'Escribe el nombre del platillo.' });
+        if (ruta === 'receta-nombre') return responderJSON(res, 200, await recetaDesdeNombre({ nombre, tipo: String(cuerpo.tipo ?? ''), apiKey }));
+        return responderJSON(res, 200, await buscarVideoTikTok({ nombre, busqueda }));
       }
       const receta = cuerpo.receta && typeof cuerpo.receta === 'object' ? sanearReceta({ ...cuerpo.receta, id: 'base' }) : null;
       if (!receta || !receta.ingredientes.length) return responderJSON(res, 400, { error: 'Falta la receta base.' });

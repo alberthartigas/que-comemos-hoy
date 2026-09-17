@@ -37,3 +37,9 @@ export const recetaDesdeTikTok = (url, nombre = '') => pedir('receta-tiktok', { 
 
 /** Tres variantes del mismo estilo que `receta`, evitando los nombres en `existentes`. */
 export const variantesDe = (receta, existentes = []) => pedir('variantes', { receta, existentes });
+
+/** Receta completa a partir del nombre del platillo (tipo: desayuno/comida/cena donde se servirá). */
+export const recetaDesdeNombre = (nombre, tipo = '') => pedir('receta-nombre', { nombre, tipo });
+
+/** Busca en internet un video de TikTok verificado para ese platillo: { url, titulo, autor } o { url: null }. */
+export const buscarVideoTikTok = (nombre) => pedir('buscar-tiktok', { nombre });

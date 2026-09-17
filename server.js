@@ -23,7 +23,7 @@ const TIPOS = {
   '.ico': 'image/x-icon',
 };
 // IA en local: exporta GROQ_API_KEY antes de `npm start` (sin clave, la app oculta las funciones de IA).
-const manejarIA = crearManejadorIA({ apiKey: process.env.GROQ_API_KEY, origenes: [] });
+const manejarIA = crearManejadorIA({ apiKey: process.env.GROQ_API_KEY, origenes: [], busqueda: { serper: process.env.SERPER_API_KEY, brave: process.env.BRAVE_API_KEY } });
 // Push en local: exporta VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y PUSH_DIR (sin eso queda apagado).
 const push = await crearPush({
   directorio: process.env.PUSH_DIR || '',

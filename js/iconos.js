@@ -17,6 +17,7 @@ export const ICONOS = {
   buscar: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
   atras: svg('<path d="m15 18-6-6 6-6"/>'),
   adelante: svg('<path d="m9 18 6-6-6-6"/>'),
+  cerrar: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
   mas: svg('<path d="M12 5v14M5 12h14"/>'),
   menos: svg('<path d="M5 12h14"/>'),
   corazon: svg('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>'),

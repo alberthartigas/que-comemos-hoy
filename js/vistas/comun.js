@@ -7,6 +7,7 @@ import { ICONOS } from '../iconos.js';
 import { alternarActiva, alternarFavorita, obtenerEstado, otraOpcion, usarRecetaEn } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
+import { abrirHoja } from './hoja.js';
 
 const descartadas = new Map(); // "fecha|tipo" → recetas que la persona ya cambió en esta sesión
 let ultimoCambio = { clave: '', hora: 0 };
@@ -37,14 +38,19 @@ export function claseAnimacion(fecha, tipo) {
   return ultimoCambio.clave === `${fecha}|${tipo}` && Date.now() - ultimoCambio.hora < 1000 ? ' aparece' : '';
 }
 
-export function filaSlot({ receta, fecha, tipo, pasada = false }) {
+export function filaSlot({ receta, fecha, tipo, pasada = false, conAgregar = false }) {
   const info = INFO_TIPO[tipo];
+  const botonPropia = conAgregar && !pasada
+    ? `<button class="btn btn--icono" type="button" data-accion="agregar-propia" data-fecha="${fecha}" data-tipo="${tipo}" title="Agregar propia receta" aria-label="Agregar propia receta de ${info.nombre.toLowerCase()}">${ICONOS.mas}</button>`
+    : '';
   if (!receta) {
+    const interior = `<span class="emoji-caja">${info.emoji}</span>
+        <span class="slot__texto"><small>${info.nombre}</small><strong>${pasada ? 'Sin registro' : conAgregar ? 'Sin receta: toca ➕ y agrega la tuya' : 'Sin recetas: agrega una'}</strong></span>`;
     return `<div class="slot slot--${tipo} slot--vacia">
-      <a class="slot__receta" href="#/nueva?tipo=${tipo}">
-        <span class="emoji-caja">${info.emoji}</span>
-        <span class="slot__texto"><small>${info.nombre}</small><strong>${pasada ? 'Sin registro' : 'Sin recetas: agrega una'}</strong></span>
-      </a>
+      ${conAgregar && !pasada
+        ? `<button class="slot__receta" type="button" data-accion="agregar-propia" data-fecha="${fecha}" data-tipo="${tipo}">${interior}</button>`
+        : `<a class="slot__receta" href="#/nueva?tipo=${tipo}">${interior}</a>`}
+      ${botonPropia}
     </div>`;
   }
   return `<div class="slot slot--${tipo}${pasada ? ' slot--pasada' : ''}">
@@ -55,7 +61,8 @@ export function filaSlot({ receta, fecha, tipo, pasada = false }) {
         <strong>${esc(receta.nombre)}</strong>
       </span>
     </a>
-    ${pasada ? '' : `<button class="btn btn--icono" type="button" data-accion="otra" data-fecha="${fecha}" data-tipo="${tipo}" aria-label="Otra opción de ${info.nombre.toLowerCase()}">${ICONOS.aleatorio}</button>`}
+    ${pasada ? '' : `<button class="btn btn--icono" type="button" data-accion="otra" data-fecha="${fecha}" data-tipo="${tipo}" title="Otra opción" aria-label="Otra opción de ${info.nombre.toLowerCase()}">${ICONOS.aleatorio}</button>`}
+    ${botonPropia}
   </div>`;
 }
 
@@ -131,15 +138,8 @@ export function abrirSelectorCalendario(receta, { fecha, tipo } = {}) {
   const fechaInicial = fecha && fecha >= hoy && [...estaSemana, ...proximaSemana].includes(fecha) ? fecha : hoy;
   const tipoInicial = TIPOS.includes(tipo) ? tipo : receta.tipos[0] ?? 'comida';
 
-  let hoja = document.getElementById('selector-calendario');
-  if (!hoja) {
-    hoja = document.createElement('dialog');
-    hoja.id = 'selector-calendario';
-    hoja.className = 'hoja';
-    document.body.append(hoja);
-  }
   const chipDia = (dia) => `<label class="opcion opcion--dia"><input type="radio" name="fecha" value="${dia}"${dia === fechaInicial ? ' checked' : ''}><span><small>${nombreDiaCorto(dia)}</small><strong>${desdeClave(dia).getDate()}</strong></span></label>`;
-  hoja.innerHTML = `<form method="dialog" class="hoja__contenido" aria-label="Agregar al calendario">
+  const hoja = abrirHoja(`<form method="dialog" class="hoja__contenido" aria-label="Agregar al calendario">
     <span class="hoja__asa"></span>
     <h2>📅 Agregar al calendario</h2>
     <p class="hoja__receta"><span class="emoji-caja">${esc(receta.emoji)}</span><strong>${esc(receta.nombre)}</strong></p>
@@ -154,14 +154,10 @@ export function abrirSelectorCalendario(receta, { fecha, tipo } = {}) {
       <button class="btn" type="button" data-cerrar>Cancelar</button>
       <button class="btn btn--primario" type="submit">Agregar</button>
     </div>
-  </form>`;
+  </form>`);
 
   const form = hoja.querySelector('form');
-  hoja.querySelector('[data-cerrar]').onclick = () => hoja.close();
-  hoja.onclick = (evento) => {
-    if (evento.target === hoja) hoja.close(); // toque fuera de la hoja
-  };
-  form.onsubmit = (evento) => {
+  hoja.onsubmit = (evento) => {
     const datos = new FormData(form);
     const dia = datos.get('fecha');
     const comida = datos.get('tipo');
@@ -173,14 +169,13 @@ export function abrirSelectorCalendario(receta, { fecha, tipo } = {}) {
     usarRecetaEn(dia, comida, receta.id);
     toast(`${receta.nombre} → ${nombreDia(dia)} ${desdeClave(dia).getDate()}, ${INFO_TIPO[comida].nombre.toLowerCase()}`);
   };
-  hoja.showModal();
 }
 
 /**
  * Calendario de una semana (lunes a domingo): tira de 7 días con los emojis de sus tres comidas y,
  * debajo, las comidas del día elegido. `lunes` es el inicio de la semana que se muestra.
  */
-export function calendarioSemana({ estado, hoy, lunes, seleccionado }) {
+export function calendarioSemana({ estado, hoy, lunes, seleccionado, conAgregar = false }) {
   const porId = new Map(estado.recetas.map((r) => [r.id, r]));
   const dias = diasDeSemana(lunes ?? hoy);
   const sel = dias.includes(seleccionado) ? seleccionado : dias.includes(hoy) ? hoy : dias[0];
@@ -196,7 +191,7 @@ export function calendarioSemana({ estado, hoy, lunes, seleccionado }) {
     <div class="cal-tira" role="tablist">${tira}</div>
     <p class="calendario__titulo">${fechaLarga(sel)}${sel === hoy ? ' · Hoy' : ''}</p>
     <div class="slots">
-      ${TIPOS.map((t) => filaSlot({ receta: porId.get(estado.plan[sel]?.[t]), fecha: sel, tipo: t, pasada: sel < hoy })).join('')}
+      ${TIPOS.map((t) => filaSlot({ receta: porId.get(estado.plan[sel]?.[t]), fecha: sel, tipo: t, pasada: sel < hoy, conAgregar })).join('')}
     </div>
   </div>`;
 }

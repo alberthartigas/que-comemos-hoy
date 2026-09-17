@@ -13,7 +13,9 @@ const origenes = (process.env.ORIGENES || 'https://laspinchisalitas.tech').split
 
 const apiKey = process.env.GROQ_API_KEY;
 if (!apiKey) console.error('Aviso: falta GROQ_API_KEY; la IA responderá "no disponible".');
-const manejarIA = crearManejadorIA({ apiKey, origenes });
+// Buscador para los videos de TikTok (opcional): SERPER_API_KEY o BRAVE_API_KEY en /etc/appcomidas/ia.env
+const busqueda = { serper: process.env.SERPER_API_KEY, brave: process.env.BRAVE_API_KEY };
+const manejarIA = crearManejadorIA({ apiKey, origenes, busqueda });
 
 const push = await crearPush({
   directorio: process.env.STATE_DIRECTORY || process.env.PUSH_DIR || '',
@@ -30,5 +32,5 @@ createServer(async (req, res) => {
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end('{"error":"No encontrado."}');
 }).listen(PUERTO, '127.0.0.1', () => {
-  console.log(`¿Qué comemos hoy? · servidor en 127.0.0.1:${PUERTO} · IA: ${apiKey ? 'sí' : 'no'} · push: ${push.disponible ? 'sí' : 'no'} · orígenes: ${origenes.join(', ')}`);
+  console.log(`¿Qué comemos hoy? · servidor en 127.0.0.1:${PUERTO} · IA: ${apiKey ? 'sí' : 'no'} · buscador de videos: ${busqueda.serper ? 'Serper' : busqueda.brave ? 'Brave' : 'no'} · push: ${push.disponible ? 'sí' : 'no'} · orígenes: ${origenes.join(', ')}`);
 });
