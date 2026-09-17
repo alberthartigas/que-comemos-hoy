@@ -186,16 +186,15 @@ export function abrirSelectorCalendario(receta, { fecha, tipo } = {}) {
 
   const form = hoja.querySelector('form');
   hoja.onsubmit = (evento) => {
+    evento.preventDefault();
     const datos = new FormData(form);
     const dia = datos.get('fecha');
     const comida = datos.get('tipo');
-    if (!dia || !comida) {
-      evento.preventDefault();
-      return;
-    }
+    if (!dia || !comida) return;
     if (!receta.activa) alternarActiva(receta.id);
     usarRecetaEn(dia, comida, receta.id);
     toast(`${receta.nombre} → ${nombreDia(dia)} ${desdeClave(dia).getDate()}, ${INFO_TIPO[comida].nombre.toLowerCase()}`);
+    hoja.close();
   };
 }
 
