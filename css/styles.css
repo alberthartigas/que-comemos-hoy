@@ -424,16 +424,15 @@ a.chip { align-self: flex-start; }
 .hoja { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; }
 .hoja::backdrop { background: rgb(0 0 0 / 45%); }
 /* Entrada: sube desde abajo y se asienta con un rebote suave. Salida: baja despacio y el fondo se desvanece. */
-.hoja--entrando .hoja__contenido { animation: hoja-entra 0.55s both; }
+.hoja--entrando .hoja__contenido { animation: hoja-entra 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .hoja--entrando::backdrop { animation: hoja-fondo-entra 0.4s ease-out both; }
 .hoja--saliendo .hoja__contenido { animation: hoja-sale 0.5s cubic-bezier(0.55, 0.05, 0.7, 0.35) both; }
 .hoja--saliendo::backdrop { animation: hoja-fondo-sale 0.5s ease-in both; }
-/* Sube rápido y frena; se asienta con un rebote muy leve (1.5 %). La hoja se extiende 24 px por
-   debajo del borde de la pantalla para que ese asentamiento nunca deje ver un hueco abajo. */
+/* Sube desde abajo y frena suave hasta su lugar, sin rebote. La hoja se extiende 24 px por
+   debajo del borde de la pantalla, así nunca se ve un hueco abajo. */
 @keyframes hoja-entra {
-  0% { transform: translate(-50%, 104%); animation-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1); }
-  72% { transform: translate(-50%, -1.5%); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
-  100% { transform: translate(-50%, 0); }
+  from { transform: translate(-50%, 104%); }
+  to { transform: translate(-50%, 0); }
 }
 @keyframes hoja-sale { from { transform: translate(-50%, 0); } to { transform: translate(-50%, 106%); } }
 @keyframes hoja-fondo-entra { from { opacity: 0; } to { opacity: 1; } }
