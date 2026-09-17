@@ -15,6 +15,7 @@ import * as hoy from './vistas/hoy.js';
 import * as receta from './vistas/receta.js';
 import * as recetas from './vistas/recetas.js';
 import * as semana from './vistas/semana.js';
+import { activarDeslizar } from './vistas/deslizar.js';
 import { cerrarHoja } from './vistas/hoja.js';
 
 const VISTAS = { hoy, semana, compras, recetas, receta, nueva: formulario, editar: formulario, ajustes };
@@ -116,6 +117,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 registrarVersionInstalada();
+activarDeslizar(raiz);
 for (const enlace of document.querySelectorAll('.tabbar a')) {
   enlace.insertAdjacentHTML('afterbegin', ICONO_PESTANA[enlace.dataset.pestana]);
 }

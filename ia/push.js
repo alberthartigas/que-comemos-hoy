@@ -33,7 +33,7 @@ export function horaLocal(instante, zona) {
 /** Qué avisos le tocan a una suscripción en este minuto (sin repetir el mismo día). */
 export function avisosPendientes(sub, instante = new Date()) {
   const { fecha, hhmm } = horaLocal(instante, sub.zona);
-  return TIPOS.filter((tipo) => HORA.test(sub.avisos?.[tipo] ?? '') && sub.avisos[tipo] === hhmm && sub.enviados?.[tipo] !== fecha)
+  return TIPOS.filter((tipo) => HORA.test(sub.avisos?.[tipo] ?? '') && sub.avisos[tipo] === hhmm && sub.enviados?.[tipo] !== fecha && sub.plan?.[fecha]?.[tipo] !== null)
     .map((tipo) => ({ tipo, fecha }));
 }
 
@@ -62,7 +62,8 @@ export function sanearSuscripcion(datos, urlApp) {
   const plan = {};
   for (const [fecha, dia] of Object.entries(datos.plan ?? {}).slice(0, 14)) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || !dia || typeof dia !== 'object') continue;
-    plan[fecha] = Object.fromEntries(TIPOS.filter((t) => typeof dia[t] === 'string').map((t) => [t, dia[t].slice(0, 80)]));
+    // null = ese día la persona no hace esa comida: no se le avisa
+    plan[fecha] = Object.fromEntries(TIPOS.filter((t) => typeof dia[t] === 'string' || dia[t] === null).map((t) => [t, dia[t] === null ? null : dia[t].slice(0, 80)]));
   }
   return {
     suscripcion: { endpoint: s.endpoint, keys: { p256dh: String(s.keys.p256dh).slice(0, 200), auth: String(s.keys.auth).slice(0, 100) } },

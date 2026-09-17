@@ -4,6 +4,9 @@ import { claveFecha, sumarDias } from './fechas.js';
 
 export const TIPOS = ['desayuno', 'comida', 'cena'];
 
+/** Comidas que la persona hace al día (Ajustes → ¿Qué comidas haces?). De fábrica, las tres. */
+export const tiposActivos = (ajustes) => TIPOS.filter((tipo) => ajustes?.comidas?.[tipo] !== false);
+
 export const INFO_TIPO = {
   desayuno: { nombre: 'Desayuno', emoji: '☀️', articulo: 'el' },
   comida: { nombre: 'Comida', emoji: '🍲', articulo: 'la' },

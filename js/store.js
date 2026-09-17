@@ -2,9 +2,12 @@
 
 import { RECETAS_BASE, VERSION_BASE } from '../data/recetas-base.js';
 import { claveFecha, inicioSemana, sumarDias } from './fechas.js';
-import { HORARIOS_DEFECTO, normalizarHorarios } from './horarios.js';
+import { HORARIOS_DEFECTO, TIPOS, normalizarHorarios, tiposActivos } from './horarios.js';
 import { FACTOR_ADULTO_DEFECTO, FACTOR_NINO_DEFECTO } from './porciones.js';
-import { cambiarReceta, completarDia, completarSemana, fijarReceta, recortarHistorial, reiniciarSemana } from './planner.js';
+import {
+  cambiarReceta, completarDia, completarSemana, fijarReceta, omitirComida as omitir, recortarHistorial, reiniciarSemana,
+  restaurarComida as restaurar,
+} from './planner.js';
 import { sanearReceta } from './recetas.js';
 
 const CLAVE_ALMACEN = 'que-comemos-hoy:v1';
@@ -29,6 +32,7 @@ function estadoVacio() {
       factorNino: FACTOR_NINO_DEFECTO,
       horarios: copiar(HORARIOS_DEFECTO),
       avisos: copiar(AVISOS_DEFECTO),
+      comidas: { desayuno: true, comida: true, cena: true },
     },
     plan: {},
     compras: {},
@@ -46,6 +50,9 @@ export function sanearEstado(datos) {
   ajustes.factorAdulto = acotar(ajustes.factorAdulto, 0.5, 2, FACTOR_ADULTO_DEFECTO);
   ajustes.factorNino = acotar(ajustes.factorNino, 0.3, 1, FACTOR_NINO_DEFECTO);
   ajustes.horarios = normalizarHorarios(ajustes.horarios);
+  const comidas = esObjeto(ajustes.comidas) ? ajustes.comidas : {};
+  ajustes.comidas = Object.fromEntries(TIPOS.map((t) => [t, comidas[t] !== false]));
+  if (!TIPOS.some((t) => ajustes.comidas[t])) ajustes.comidas = { desayuno: true, comida: true, cena: true };
   const avisos = esObjeto(ajustes.avisos) ? ajustes.avisos : {};
   ajustes.avisos = {
     activos: avisos.activos === true,
@@ -131,7 +138,7 @@ function limpiarComprasViejas(compras, hoy) {
 /** Garantiza que la semana de `fecha` tenga plan desde hoy en adelante (y corrige recetas borradas o desactivadas). */
 export function asegurarSemana(fecha, hoy = claveFecha()) {
   actualizar((e) => {
-    const plan = completarSemana({ recetas: e.recetas, plan: recortarHistorial(e.plan, hoy), fecha, desde: hoy });
+    const plan = completarSemana({ recetas: e.recetas, plan: recortarHistorial(e.plan, hoy), fecha, desde: hoy, tipos: tiposActivos(e.ajustes) });
     const compras = limpiarComprasViejas(e.compras, hoy);
     return plan === e.plan && compras === e.compras ? e : { ...e, plan, compras };
   });
@@ -149,7 +156,7 @@ export function otraOpcion(fecha, tipo, vistas = []) {
 
 export function usarRecetaEn(fecha, tipo, id) {
   actualizar((e) => {
-    const plan = completarDia({ recetas: e.recetas, plan: fijarReceta({ plan: e.plan, fecha, tipo, id }), fecha });
+    const plan = completarDia({ recetas: e.recetas, plan: fijarReceta({ plan: e.plan, fecha, tipo, id }), fecha, tipos: tiposActivos(e.ajustes) });
     return { ...e, plan };
   });
 }
@@ -157,8 +164,18 @@ export function usarRecetaEn(fecha, tipo, id) {
 export function volverASortearSemana(fecha, hoy = claveFecha()) {
   actualizar((e) => {
     const limpio = reiniciarSemana({ plan: e.plan, fecha, desde: hoy });
-    return { ...e, plan: completarSemana({ recetas: e.recetas, plan: limpio, fecha, desde: hoy }) };
+    return { ...e, plan: completarSemana({ recetas: e.recetas, plan: limpio, fecha, desde: hoy, tipos: tiposActivos(e.ajustes) }) };
   });
+}
+
+/** Quita una comida de un día (deslizar la fila). */
+export function omitirComida(fecha, tipo) {
+  actualizar((e) => ({ ...e, plan: omitir({ plan: e.plan, fecha, tipo }) }));
+}
+
+/** Regresa una comida quitada; se sortea de nuevo. */
+export function restaurarComida(fecha, tipo) {
+  actualizar((e) => ({ ...e, plan: restaurar({ recetas: e.recetas, plan: e.plan, fecha, tipo, tipos: tiposActivos(e.ajustes) }) }));
 }
 
 // ---------- Recetas ----------

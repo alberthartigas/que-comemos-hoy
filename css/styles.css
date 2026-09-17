@@ -343,6 +343,25 @@ a.chip { align-self: flex-start; }
 
 /* Filas de comida (resto del día y semana) */
 .slots { display: flex; flex-direction: column; gap: 10px; }
+/* Deslizar a la izquierda quita la comida de ese día: el envoltorio muestra "Quitar" detrás */
+.slot-envoltura { position: relative; border-radius: 18px; overflow: hidden; }
+.slot-envoltura::before { content: 'Quitar'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 22px; border-radius: 18px; background: var(--peligro); color: #fff; font-weight: 800; }
+.slot[data-omitible] { position: relative; touch-action: pan-y; transition: transform 0.18s ease, opacity 0.18s ease; }
+.slot--deslizando { transition: none; }
+.slot--listo { box-shadow: var(--sombra), 0 0 0 2px var(--peligro); }
+.slot--fuera { transform: translateX(-110%) !important; opacity: 0; }
+.slot__quitar { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--superficie-2); color: var(--texto-suave); opacity: 0; transition: opacity 0.15s; }
+.slot__quitar svg { width: 13px; height: 13px; }
+@media (hover: hover) { .slot:hover .slot__quitar { opacity: 0.7; } .slot__quitar:hover { opacity: 1; color: var(--peligro); } }
+.slot__quitar:focus-visible { opacity: 1; }
+/* Espacio vacío o quitado: invita a agregar */
+.slot--vacia { border-left-style: dashed; background: transparent; box-shadow: inset 0 0 0 1.5px var(--borde); }
+.slot--vacia .emoji-caja { opacity: 0.7; }
+.slot--vacia .slot__receta { cursor: pointer; }
+.slot__mas { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin-right: 4px; border-radius: 12px; background: var(--primario-suave); color: var(--comida); }
+.slot__mas svg { width: 18px; height: 18px; }
+.receta-item--boton { width: 100%; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.hoja__contenido .lista-recetas { max-height: 46vh; overflow: auto; }
 .slot {
   display: flex;
   align-items: center;

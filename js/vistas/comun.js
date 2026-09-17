@@ -1,12 +1,14 @@
 // Piezas que comparten varias pantallas.
 
 import { claveFecha, desdeClave, diasDeSemana, diasParaAgregar, fechaLarga, nombreDia, nombreDiaCorto } from '../fechas.js';
-import { INFO_TIPO, TIPOS } from '../horarios.js';
+import { INFO_TIPO, TIPOS, tiposActivos } from '../horarios.js';
+import { OMITIDA } from '../planner.js';
 import { estadoIA } from '../ia.js';
 import { ICONOS } from '../iconos.js';
-import { alternarActiva, alternarFavorita, obtenerEstado, otraOpcion, usarRecetaEn } from '../store.js';
+import { alternarActiva, alternarFavorita, obtenerEstado, omitirComida, otraOpcion, usarRecetaEn } from '../store.js';
 import { busquedaTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
+import { abrirElegirReceta } from './elegir-receta-hoja.js';
 import { abrirHoja } from './hoja.js';
 
 const descartadas = new Map(); // "fecha|tipo" → recetas que la persona ya cambió en esta sesión
@@ -38,22 +40,33 @@ export function claseAnimacion(fecha, tipo) {
   return ultimoCambio.clave === `${fecha}|${tipo}` && Date.now() - ultimoCambio.hora < 1000 ? ' aparece' : '';
 }
 
-export function filaSlot({ receta, fecha, tipo, pasada = false, conAgregar = false }) {
+export function filaSlot({ receta, fecha, tipo, pasada = false, conAgregar = false, omitible = false, omitida = false }) {
   const info = INFO_TIPO[tipo];
-  const botonPropia = conAgregar && !pasada
+  // Deslizar hacia la izquierda (o la × tenue con mouse) quita la comida de ese día; el envoltorio muestra "Quitar" detrás.
+  const puedeQuitar = omitible && !pasada && receta;
+  const atributos = puedeQuitar ? ` data-omitible data-fecha="${fecha}" data-tipo="${tipo}"` : '';
+  const botonQuitar = puedeQuitar ? `<button class="slot__quitar" type="button" data-accion="omitir" data-fecha="${fecha}" data-tipo="${tipo}" aria-label="Quitar ${info.nombre.toLowerCase()} de este día">${ICONOS.cerrar}</button>` : '';
+  const envolver = (html) => (puedeQuitar ? `<div class="slot-envoltura">${html}</div>` : html);
+  const botonPropia = conAgregar && !pasada && receta
     ? `<button class="btn btn--icono" type="button" data-accion="agregar-propia" data-fecha="${fecha}" data-tipo="${tipo}" title="Agregar propia receta" aria-label="Agregar propia receta de ${info.nombre.toLowerCase()}">${ICONOS.mas}</button>`
     : '';
+
   if (!receta) {
-    const interior = `<span class="emoji-caja">${info.emoji}</span>
-        <span class="slot__texto"><small>${info.nombre}</small><strong>${pasada ? 'Sin registro' : conAgregar ? 'Sin receta: toca ➕ y agrega la tuya' : 'Sin recetas: agrega una'}</strong></span>`;
-    return `<div class="slot slot--${tipo} slot--vacia">
-      ${conAgregar && !pasada
-        ? `<button class="slot__receta" type="button" data-accion="agregar-propia" data-fecha="${fecha}" data-tipo="${tipo}">${interior}</button>`
-        : `<a class="slot__receta" href="#/nueva?tipo=${tipo}">${interior}</a>`}
-      ${botonPropia}
+    // Espacio en blanco (sin receta o quitada): siempre se puede volver a llenar tocándolo.
+    if (pasada) {
+      return `<div class="slot slot--${tipo} slot--vacia slot--pasada">
+        <span class="slot__receta"><span class="emoji-caja">${info.emoji}</span><span class="slot__texto"><small>${info.nombre}</small><strong>Sin registro</strong></span></span>
+      </div>`;
+    }
+    return `<div class="slot slot--${tipo} slot--vacia${omitida ? ' slot--omitida' : ''}">
+      <button class="slot__receta" type="button" data-accion="elegir" data-fecha="${fecha}" data-tipo="${tipo}" aria-label="Agregar ${info.nombre.toLowerCase()}">
+        <span class="emoji-caja">${info.emoji}</span>
+        <span class="slot__texto"><small>${info.nombre}</small><strong>${omitida ? 'Sin planear · toca para agregar' : 'Sin receta · toca para agregar'}</strong></span>
+        <span class="slot__mas">${ICONOS.mas}</span>
+      </button>
     </div>`;
   }
-  return `<div class="slot slot--${tipo}${pasada ? ' slot--pasada' : ''}">
+  return envolver(`<div class="slot slot--${tipo}${pasada ? ' slot--pasada' : ''}"${atributos}>
     <a class="slot__receta" href="${enlaceReceta(receta.id, fecha, tipo)}">
       <span class="emoji-caja${claseAnimacion(fecha, tipo)}">${esc(receta.emoji)}</span>
       <span class="slot__texto">
@@ -62,9 +75,25 @@ export function filaSlot({ receta, fecha, tipo, pasada = false, conAgregar = fal
       </span>
     </a>
     ${pasada ? '' : `<button class="btn btn--icono" type="button" data-accion="otra" data-fecha="${fecha}" data-tipo="${tipo}" title="Otra opción" aria-label="Otra opción de ${info.nombre.toLowerCase()}">${ICONOS.aleatorio}</button>`}
-    ${botonPropia}
-  </div>`;
+    ${botonPropia}${botonQuitar}
+  </div>`);
 }
+
+/** Comidas que la persona hace al día (las quitadas de un día se muestran como espacio para agregar). */
+export const comidasDelDia = (estado) => tiposActivos(estado.ajustes);
+
+export const estaOmitida = (estado, fecha, tipo) => estado.plan[fecha]?.[tipo] === OMITIDA;
+
+/** Filas de las comidas de un día. */
+export function filasDelDia({ estado, fecha, hoy, conAgregar = false }) {
+  const porId = new Map(estado.recetas.map((r) => [r.id, r]));
+  return comidasDelDia(estado).map((tipo) => filaSlot({
+    receta: porId.get(estado.plan[fecha]?.[tipo]), fecha, tipo, pasada: fecha < hoy, conAgregar, omitible: true, omitida: estaOmitida(estado, fecha, tipo),
+  })).join('');
+}
+
+export const accionOmitir = (boton) => omitirComida(boton.dataset.fecha, boton.dataset.tipo);
+export const accionElegir = (boton) => abrirElegirReceta({ fecha: boton.dataset.fecha, tipo: boton.dataset.tipo });
 
 /** Lista compacta de recetas con corazón para marcar favoritas. */
 export function listaMini(recetas) {
@@ -181,7 +210,7 @@ export function calendarioSemana({ estado, hoy, lunes, seleccionado, conAgregar 
   const sel = dias.includes(seleccionado) ? seleccionado : dias.includes(hoy) ? hoy : dias[0];
   const tira = dias.map((dia) => {
     const clases = ['cal-dia', dia === hoy && 'cal-dia--hoy', dia === sel && 'cal-dia--activo', dia < hoy && 'cal-dia--pasado'].filter(Boolean).join(' ');
-    const emojis = TIPOS.map((t) => porId.get(estado.plan[dia]?.[t])?.emoji ?? '·');
+    const emojis = tiposActivos(estado.ajustes).map((t) => porId.get(estado.plan[dia]?.[t])?.emoji ?? '·');
     return `<button class="${clases}" type="button" role="tab" aria-selected="${dia === sel}" data-accion="dia" data-fecha="${dia}" aria-label="${nombreDia(dia)} ${desdeClave(dia).getDate()}">
       <small>${nombreDiaCorto(dia)}</small><strong>${desdeClave(dia).getDate()}</strong>
       <span class="cal-dia__emojis">${emojis.map((e) => `<span>${esc(e)}</span>`).join('')}</span>
@@ -191,7 +220,7 @@ export function calendarioSemana({ estado, hoy, lunes, seleccionado, conAgregar 
     <div class="cal-tira" role="tablist">${tira}</div>
     <p class="calendario__titulo">${fechaLarga(sel)}${sel === hoy ? ' · Hoy' : ''}</p>
     <div class="slots">
-      ${TIPOS.map((t) => filaSlot({ receta: porId.get(estado.plan[sel]?.[t]), fecha: sel, tipo: t, pasada: sel < hoy, conAgregar })).join('')}
+      ${filasDelDia({ estado, fecha: sel, hoy, conAgregar })}
     </div>
   </div>`;
 }

@@ -5,7 +5,7 @@ import { INFO_TIPO, TIPOS, saludo, tipoSegunHora } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { asegurarSemana } from '../store.js';
 import { esc, textoPersonas } from '../util.js';
-import { accionOtraOpcion, claseAnimacion, enlaceReceta, enlaceTikTok, filaSlot } from './comun.js';
+import { accionElegir, accionOmitir, accionOtraOpcion, claseAnimacion, comidasDelDia, enlaceReceta, enlaceTikTok, estaOmitida, filaSlot } from './comun.js';
 
 
 export function preparar({ ahora, estado }) {
@@ -48,11 +48,18 @@ function tarjetaPrincipal(receta, momento) {
 export function render({ ahora, estado }) {
   const { ajustes, plan, recetas } = estado;
   const hoy = claveFecha(ahora);
-  const momento = tipoSegunHora(ahora, ajustes.horarios);
-  const info = INFO_TIPO[momento.tipo];
-  const rango = ajustes.horarios[momento.tipo];
   const porId = new Map(recetas.map((r) => [r.id, r]));
   const recetaDe = (fecha, tipo) => porId.get(plan[fecha]?.[tipo]);
+
+  // Si la comida que toca por la hora no se hace (o se quitó hoy), se muestra la siguiente del día.
+  const porHora = tipoSegunHora(ahora, ajustes.horarios);
+  const activasDelDia = comidasDelDia(estado).filter((t) => !estaOmitida(estado, porHora.fecha, t));
+  const tipoMostrado = activasDelDia.includes(porHora.tipo)
+    ? porHora.tipo
+    : activasDelDia.find((t) => TIPOS.indexOf(t) > TIPOS.indexOf(porHora.tipo)) ?? null;
+  const momento = tipoMostrado ? { ...porHora, tipo: tipoMostrado, estado: tipoMostrado === porHora.tipo ? porHora.estado : 'siguiente' } : porHora;
+  const info = INFO_TIPO[momento.tipo];
+  const rango = ajustes.horarios[momento.tipo];
 
   const etiqueta = momento.estado === 'ahora'
     ? `Ahora toca ${info.nombre.toLowerCase()}`
@@ -60,7 +67,7 @@ export function render({ ahora, estado }) {
 
   // Pasada la medianoche con una cena que cruza el día, el resto muestra el día nuevo completo.
   const fechaResto = momento.fecha < hoy ? hoy : momento.fecha;
-  const tiposResto = momento.fecha < hoy ? TIPOS : TIPOS.filter((t) => t !== momento.tipo);
+  const tiposResto = comidasDelDia(estado).filter((t) => momento.fecha < hoy || !tipoMostrado || t !== momento.tipo);
   const tituloResto = momento.fecha < hoy ? 'Hoy' : momento.fecha === hoy ? 'El resto del día' : 'Mañana también';
   const yaPaso = (tipo) => fechaResto === hoy && momento.fecha === hoy && TIPOS.indexOf(tipo) < TIPOS.indexOf(momento.tipo);
 
@@ -76,12 +83,12 @@ export function render({ ahora, estado }) {
         <span>${info.emoji} ${etiqueta}</span>
         <span class="hero__horario">${rango.inicio} – ${rango.fin}</span>
       </div>
-      ${tarjetaPrincipal(recetaDe(momento.fecha, momento.tipo), momento)}
+      ${tipoMostrado ? tarjetaPrincipal(recetaDe(momento.fecha, momento.tipo), momento) : `<div class="vacio"><span class="vacio__emoji">🌙</span><p>Ya no hay más comidas planeadas para hoy.</p><a class="btn btn--primario" href="#/semana">Ver el calendario</a></div>`}
     </section>
 
     <h2 class="seccion-titulo">${tituloResto}</h2>
     <div class="slots">
-      ${tiposResto.map((tipo) => filaSlot({ receta: recetaDe(fechaResto, tipo), fecha: fechaResto, tipo, pasada: yaPaso(tipo) })).join('')}
+      ${tiposResto.map((tipo) => filaSlot({ receta: recetaDe(fechaResto, tipo), fecha: fechaResto, tipo, pasada: yaPaso(tipo), omitible: true, omitida: estaOmitida(estado, fechaResto, tipo) })).join('')}
     </div>
 
     <div class="accesos">
@@ -90,4 +97,4 @@ export function render({ ahora, estado }) {
     </div>`;
 }
 
-export const acciones = { otra: accionOtraOpcion };
+export const acciones = { otra: accionOtraOpcion, omitir: accionOmitir, elegir: accionElegir };

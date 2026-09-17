@@ -7,6 +7,9 @@ import { afinidadConFavoritas } from './similares.js';
 
 const DIAS_PARA_PESO_MAXIMO = 28;
 
+/** Marca en el plan: ese día la persona quitó esa comida (no se sortea ni se muestra). */
+export const OMITIDA = 'omitida';
+
 /** Recetas activas que pueden salir en ese tipo de comida. */
 export function candidatas(recetas, tipo) {
   return recetas.filter((r) => r.activa !== false && r.tipos?.includes(tipo));
@@ -97,12 +100,14 @@ function asignar(plan, fecha, tipo, id) {
  * el sorteo solo elige recetas del tipo correcto, así que si no coincide es porque la persona lo quiso.
  * Si no cambia nada devuelve el mismo objeto `plan`.
  */
-export function completarDia({ recetas, plan, fecha, rng = Math.random }) {
+export function completarDia({ recetas, plan, fecha, rng = Math.random, tipos = TIPOS }) {
   const porId = new Map(recetas.map((r) => [r.id, r]));
   let nuevoPlan = plan;
   TIPOS.forEach((tipo, i) => {
+    if (!tipos.includes(tipo)) return; // comida que la persona no hace
     const dia = nuevoPlan[fecha] ?? {};
     const id = dia[tipo];
+    if (id === OMITIDA) return; // la quitó ese día
     const receta = porId.get(id);
     const valida = receta && receta.activa !== false;
     const repetidaEnElDia = TIPOS.slice(0, i).some((anterior) => dia[anterior] === id);
@@ -115,10 +120,18 @@ export function completarDia({ recetas, plan, fecha, rng = Math.random }) {
 }
 
 /** Llena la semana de `fecha` desde `desde` en adelante: los días pasados no se tocan para no gastar recetas. */
-export function completarSemana({ recetas, plan, fecha, desde, rng = Math.random }) {
+export function completarSemana({ recetas, plan, fecha, desde, rng = Math.random, tipos = TIPOS }) {
   return diasDeSemana(fecha)
     .filter((dia) => !desde || dia >= desde)
-    .reduce((acumulado, dia) => completarDia({ recetas, plan: acumulado, fecha: dia, rng }), plan);
+    .reduce((acumulado, dia) => completarDia({ recetas, plan: acumulado, fecha: dia, rng, tipos }), plan);
+}
+
+/** Quita una comida de un día (queda marcada para que el sorteo no la vuelva a llenar). */
+export const omitirComida = ({ plan, fecha, tipo }) => asignar(plan, fecha, tipo, OMITIDA);
+
+/** Regresa una comida quitada: se vuelve a sortear. */
+export function restaurarComida({ recetas, plan, fecha, tipo, rng = Math.random, tipos = TIPOS }) {
+  return completarDia({ recetas, plan: asignar(plan, fecha, tipo, null), fecha, rng, tipos });
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import { actualizacionDisponible, enApk, ultimaRelease, versionInstalada } from '../actualizaciones.js';
 import { claveFecha } from '../fechas.js';
-import { HORARIOS_DEFECTO, INFO_TIPO, TIPOS } from '../horarios.js';
+import { HORARIOS_DEFECTO, INFO_TIPO, TIPOS, tiposActivos } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { porcionesTotales } from '../porciones.js';
 import { activarAvisos, desactivarAvisos, esIphoneSinInstalar, permisoNotificaciones, probarAviso, soportaPush } from '../push.js';
@@ -71,6 +71,15 @@ export function render({ estado }) {
     </section>
 
     <section class="tarjeta">
+      <h2>🍽️ ¿Qué comidas haces al día?</h2>
+      <p class="nota">Apaga la que no acostumbres (por ejemplo, si no desayunas). También puedes quitar una comida de un solo día deslizando su fila en el calendario.</p>
+      ${TIPOS.map((tipo) => `<label class="interruptor">
+        <span>${INFO_TIPO[tipo].emoji} ${INFO_TIPO[tipo].nombre}</span>
+        <input type="checkbox" data-cambio="comida-activa" data-tipo="${tipo}"${ajustes.comidas[tipo] ? ' checked' : ''}>
+      </label>`).join('')}
+    </section>
+
+    <section class="tarjeta">
       <h2>🔔 Avisos de comida</h2>
       <p class="nota">Una notificación a la hora de cada comida con el platillo que toca hoy. Deja vacía la hora de una comida si no quieres aviso de esa.</p>
       ${notaAvisos()}
@@ -78,7 +87,7 @@ export function render({ estado }) {
         <span>Avisarme qué toca</span>
         <input type="checkbox" data-cambio="avisos-activos"${ajustes.avisos.activos ? ' checked' : ''}>
       </label>
-      ${TIPOS.map((tipo) => `<label class="aviso-fila">
+      ${tiposActivos(ajustes).map((tipo) => `<label class="aviso-fila">
         <span>${INFO_TIPO[tipo].emoji} ${INFO_TIPO[tipo].nombre}</span>
         <input class="entrada" type="time" value="${ajustes.avisos[tipo] ?? ''}" data-cambio="aviso-hora" data-tipo="${tipo}" aria-label="Hora del aviso de ${INFO_TIPO[tipo].nombre.toLowerCase()}">
       </label>`).join('')}
@@ -96,7 +105,7 @@ export function render({ estado }) {
     <section class="tarjeta">
       <h2>⏰ Horarios de comida</h2>
       <p class="nota">La pantalla de inicio usa estas horas para saber si toca desayuno, comida o cena.</p>
-      ${TIPOS.map((tipo) => `<div class="horario">
+      ${tiposActivos(ajustes).map((tipo) => `<div class="horario">
         <span class="horario__titulo">${INFO_TIPO[tipo].emoji} ${INFO_TIPO[tipo].nombre}</span>
         <input class="entrada" type="time" value="${ajustes.horarios[tipo].inicio}" data-cambio="horario" data-tipo="${tipo}" data-extremo="inicio" aria-label="${INFO_TIPO[tipo].nombre} desde">
         <span class="horario__a">a</span>
@@ -195,6 +204,15 @@ export const acciones = {
 };
 
 export const cambios = {
+  'comida-activa'(casilla, { estado }) {
+    const comidas = { ...estado.ajustes.comidas, [casilla.dataset.tipo]: casilla.checked };
+    if (!TIPOS.some((t) => comidas[t])) {
+      toast('Deja al menos una comida al día.');
+      casilla.checked = true;
+      return;
+    }
+    actualizarAjustes({ comidas });
+  },
   async 'avisos-activos'(casilla, ctx) {
     try {
       if (casilla.checked) {

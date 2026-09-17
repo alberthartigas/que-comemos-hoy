@@ -3,7 +3,8 @@
 // y los nombres del plan de los próximos días cada vez que cambian.
 
 import { claveFecha, sumarDias } from './fechas.js';
-import { TIPOS } from './horarios.js';
+import { TIPOS, tiposActivos } from './horarios.js';
+import { OMITIDA } from './planner.js';
 import { actualizarAjustes, obtenerEstado, suscribir as alCambiarEstado } from './store.js';
 
 const BASE = new URL('api/push/', document.baseURI);
@@ -55,13 +56,15 @@ async function suscripcionActual() {
 /** Nombres de los platillos de hoy y los próximos días (solo lo que el servidor necesita para el texto del aviso). */
 function planParaServidor(estado) {
   const porId = new Map(estado.recetas.map((r) => [r.id, r.nombre]));
+  const activas = tiposActivos(estado.ajustes);
   const hoy = claveFecha();
   const plan = {};
   for (let i = 0; i < DIAS_A_SUBIR; i++) {
     const fecha = sumarDias(hoy, i);
     const dia = estado.plan[fecha];
     if (!dia) continue;
-    plan[fecha] = Object.fromEntries(TIPOS.filter((t) => porId.has(dia[t])).map((t) => [t, porId.get(dia[t])]));
+    // null = ese día no hay esa comida (quitada): el servidor no manda aviso
+    plan[fecha] = Object.fromEntries(TIPOS.map((t) => [t, !activas.includes(t) || dia[t] === OMITIDA ? null : porId.get(dia[t]) ?? undefined]).filter(([, v]) => v !== undefined));
   }
   return plan;
 }
@@ -70,7 +73,7 @@ function datosParaServidor(sub, estado) {
   const { avisos } = estado.ajustes;
   return {
     suscripcion: sub.toJSON(),
-    avisos: Object.fromEntries(TIPOS.map((t) => [t, avisos[t] ?? null])),
+    avisos: Object.fromEntries(TIPOS.map((t) => [t, tiposActivos(estado.ajustes).includes(t) ? avisos[t] ?? null : null])),
     zona: Intl.DateTimeFormat().resolvedOptions().timeZone,
     plan: planParaServidor(estado),
   };

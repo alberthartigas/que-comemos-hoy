@@ -267,3 +267,28 @@ test('compras del día: clave compartida y lista armada', async () => {
   assert.equal(avance(lista).enCarrito, 0);
   assert.match(textoParaCompartir(lista), /🛒 Lista de compras\nHoy\nPara 2 adultos y 1 niño/);
 });
+
+test('quitar una comida de un día y comidas que la persona no hace', async () => {
+  const { OMITIDA, omitirComida, restaurarComida } = await import('../js/planner.js');
+  const azar = azarConSemilla(9);
+  let plan = completarDia({ recetas: RECETAS_BASE, plan: {}, fecha: '2026-09-17', rng: azar });
+  plan = omitirComida({ plan, fecha: '2026-09-17', tipo: 'desayuno' });
+  assert.equal(plan['2026-09-17'].desayuno, OMITIDA);
+  assert.equal(completarDia({ recetas: RECETAS_BASE, plan, fecha: '2026-09-17', rng: azar }), plan, 'el sorteo respeta la comida quitada');
+  const restaurado = restaurarComida({ recetas: RECETAS_BASE, plan, fecha: '2026-09-17', tipo: 'desayuno', rng: azar });
+  assert.ok(RECETAS_BASE.some((r) => r.id === restaurado['2026-09-17'].desayuno), 'al regresarla se sortea de nuevo');
+
+  const sinDesayuno = completarSemana({ recetas: RECETAS_BASE, plan: {}, fecha: '2026-09-14', rng: azar, tipos: ['comida', 'cena'] });
+  for (const dia of Object.values(sinDesayuno)) {
+    assert.equal(dia.desayuno, undefined);
+    assert.ok(dia.comida && dia.cena);
+  }
+});
+
+test('push: una comida quitada no manda aviso', async () => {
+  const { avisosPendientes, sanearSuscripcion } = await import('../ia/push.js');
+  const limpia = sanearSuscripcion({ suscripcion: { endpoint: 'https://fcm.googleapis.com/x', keys: { p256dh: 'a', auth: 'b' } },
+    avisos: { desayuno: '07:30' }, zona: 'America/Hermosillo', plan: { '2026-09-14': { desayuno: null, comida: 'Tinga' } } }, 'https://ejemplo/');
+  assert.deepEqual(limpia.plan, { '2026-09-14': { desayuno: null, comida: 'Tinga' } });
+  assert.deepEqual(avisosPendientes({ ...limpia, enviados: {} }, new Date('2026-09-14T14:30:00Z')), [], 'desayuno quitado ese día');
+});

@@ -37,6 +37,8 @@ En cada comida del calendario hay dos botones: ⇄ **otra opción** (el sorteo p
 
 Para que la búsqueda del video de TikTok funcione hace falta una clave de buscador (gratuita) en el servidor: `SERPER_API_KEY` (serper.dev, 2,500 búsquedas gratis) o `BRAVE_API_KEY` en `/etc/appcomidas/ia.env`, y `systemctl restart appcomidas-ia`. Sin clave, la receta se agrega igual y su botón TikTok abre la búsqueda del platillo. (DuckDuckGo, Brave sin clave y Bing bloquean o no responden desde el servidor, y el modelo con búsqueda de Groq excede el límite gratuito.)
 
+**Quitar una comida de un día:** desliza su fila hacia la izquierda (con mouse aparece una × tenue al pasar encima). La fila no desaparece: queda como un espacio en blanco "Sin planear · toca para agregar" que al tocarlo abre una hoja para elegir una receta guardada (de ese tipo o todas, con buscador), sortear una o agregar la tuya. En Ajustes → "¿Qué comidas haces al día?" se apaga una comida para siempre (por ejemplo, si no desayunas): desaparece del calendario, de Hoy, de los avisos y del sorteo.
+
 En **Recetas** (lista y detalle) cada receta tiene el botón 📅 **Agregar a…**: abre una hoja para elegir el día (lo que queda de esta semana y toda la próxima) y si va de desayuno, comida o cena. La receta queda en ese espacio del calendario aunque no sea de ese tipo (la elección manual se respeta) y, si ya había otra, la reemplaza.
 
 ## Cómo decide qué toca

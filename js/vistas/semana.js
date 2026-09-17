@@ -6,7 +6,7 @@ import { TIPOS } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { asegurarSemana, volverASortearSemana } from '../store.js';
 import { esc, plural, toast } from '../util.js';
-import { accionOtraOpcion, calendarioSemana, filaSlot } from './comun.js';
+import { accionElegir, accionOmitir, accionOtraOpcion, calendarioSemana, filasDelDia } from './comun.js';
 import { abrirComprasDelDia } from './compras-hoja.js';
 import { abrirHojaRecetaPropia } from './receta-propia-hoja.js';
 
@@ -46,7 +46,7 @@ function listaSemana(estado, lunes, hoy) {
     return `<section class="${clases}">
       <h2 class="dia__titulo">${nombreDia(dia)} ${desdeClave(dia).getDate()}${dia === hoy ? ' <span class="chip chip--comida">Hoy</span>' : ''}</h2>
       <div class="slots">
-        ${TIPOS.map((tipo) => filaSlot({ receta: porId.get(estado.plan[dia]?.[tipo]), fecha: dia, tipo, pasada: pasado, conAgregar: true })).join('')}
+        ${filasDelDia({ estado, fecha: dia, hoy, conAgregar: true })}
       </div>
     </section>`;
   }).join('');
@@ -107,6 +107,8 @@ export function alMontar(_raiz, ctx) {
 
 export const acciones = {
   otra: accionOtraOpcion,
+  omitir: accionOmitir,
+  elegir: accionElegir,
   dia(boton, ctx) {
     diaSeleccionado = boton.dataset.fecha;
     ctx.repintar();
