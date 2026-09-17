@@ -106,7 +106,12 @@ export async function infoTikTok(url) {
     });
     if (!respuesta.ok) return null;
     const datos = await respuesta.json();
-    return { titulo: String(datos.title ?? '').slice(0, 600), autor: String(datos.author_name ?? '').slice(0, 80) };
+    return {
+      titulo: String(datos.title ?? '').slice(0, 600),
+      autor: String(datos.author_name ?? '').slice(0, 80),
+      id: /data-video-id="(\d+)"/.exec(String(datos.html ?? ''))?.[1] ?? /\/video\/(\d+)/.exec(url)?.[1] ?? null,
+      miniatura: typeof datos.thumbnail_url === 'string' ? datos.thumbnail_url.slice(0, 500) : '',
+    };
   } catch {
     return null;
   }
@@ -182,6 +187,20 @@ async function buscarEnBing(consulta) {
   return [...(await r.text()).matchAll(new RegExp(PATRON_VIDEO.source, 'gi'))].map((m) => m[0]);
 }
 
+/** Datos de un video (id para el reproductor, título, autor); resuelve enlaces cortos vm.tiktok.com. */
+export async function datosVideoTikTok(url) {
+  const info = await infoTikTok(url);
+  if (info?.id) return { url, ...info };
+  try {
+    const r = await fetch(url, { method: 'HEAD', redirect: 'follow', headers: { 'User-Agent': UA_NAVEGADOR }, signal: AbortSignal.timeout(12_000) });
+    const id = /\/video\/(\d+)/.exec(r.url)?.[1] ?? null;
+    if (id) return { url: r.url.split('?')[0], id, titulo: info?.titulo ?? '', autor: info?.autor ?? '', miniatura: info?.miniatura ?? '' };
+  } catch {
+    // sin resolución
+  }
+  return { url, id: null, titulo: info?.titulo ?? '', autor: info?.autor ?? '' };
+}
+
 /**
  * Busca un video de TikTok con la receta y lo verifica con el oEmbed de TikTok (que exista y que su
  * título hable del platillo). Devuelve { url, titulo, autor } o { url: null, motivo }.
@@ -207,17 +226,18 @@ export async function buscarVideoTikTok({ nombre, busqueda = {} }) {
     if (candidatos.size >= 3) break;
   }
   const palabras = normalizarTexto(nombre).split(' ').filter((p) => p.length > 3);
-  let primero = null;
-  for (const url of [...candidatos].slice(0, 6)) {
+  const videos = [];
+  for (const url of [...candidatos].slice(0, 8)) {
     const info = await infoTikTok(url);
-    if (!info) continue;
+    if (!info?.id) continue;
     const titulo = normalizarTexto(info.titulo);
-    if (palabras.some((p) => titulo.includes(p))) return { url, ...info };
-    primero ??= { url, ...info };
+    videos.push({ url, ...info, relacionado: palabras.some((p) => titulo.includes(p)) });
+    if (videos.length >= 4) break;
   }
-  if (primero) return primero;
+  videos.sort((a, b) => Number(b.relacionado) - Number(a.relacionado));
   const sinBuscador = !busqueda.serper && !busqueda.brave;
-  return { url: null, motivo: sinBuscador ? 'Sin buscador configurado (SERPER_API_KEY o BRAVE_API_KEY).' : fallas[0] ?? 'No se encontró un video verificado.' };
+  const motivo = videos.length ? '' : sinBuscador ? 'Sin buscador configurado (SERPER_API_KEY o BRAVE_API_KEY).' : fallas[0] ?? 'No se encontró un video verificado.';
+  return { url: videos[0]?.url ?? null, ...(videos[0] ?? {}), videos, motivo };
 }
 
 export async function variantesDeReceta({ receta, existentes = [], cuantas = 3, apiKey }) {
@@ -303,7 +323,7 @@ export function crearManejadorIA({ apiKey, origenes = [], busqueda = {} }) {
 
   return async function manejarIA(req, res, ruta) {
     if (ruta === 'estado') return responderJSON(res, 200, { disponible: Boolean(apiKey), modelos: apiKey ? MODELOS : [] });
-    if (!['receta-tiktok', 'receta-nombre', 'buscar-tiktok', 'variantes'].includes(ruta)) return responderJSON(res, 404, { error: 'Ruta no encontrada.' });
+    if (!['receta-tiktok', 'receta-nombre', 'buscar-tiktok', 'video-tiktok', 'variantes'].includes(ruta)) return responderJSON(res, 404, { error: 'Ruta no encontrada.' });
     if (req.method !== 'POST') return responderJSON(res, 405, { error: 'Usa POST.' });
     if (!apiKey) return responderJSON(res, 503, { error: 'La IA no está configurada en este servidor.' });
     if (!origenPermitido(req)) return responderJSON(res, 403, { error: 'Origen no permitido.' });
@@ -312,6 +332,11 @@ export function crearManejadorIA({ apiKey, origenes = [], busqueda = {} }) {
 
     try {
       const cuerpo = await leerCuerpo(req);
+      if (ruta === 'video-tiktok') {
+        const url = String(cuerpo.url ?? '').trim().slice(0, 500);
+        if (!/^https:\/\/([a-z0-9-]+\.)*tiktok\.com\//i.test(url)) return responderJSON(res, 400, { error: 'Enlace de TikTok inválido.' });
+        return responderJSON(res, 200, await datosVideoTikTok(url));
+      }
       if (ruta === 'receta-tiktok') {
         const url = String(cuerpo.url ?? '').trim().slice(0, 500);
         if (!/^https:\/\/([a-z0-9-]+\.)*tiktok\.com\//i.test(url)) return responderJSON(res, 400, { error: 'Pega un enlace de tiktok.com.' });

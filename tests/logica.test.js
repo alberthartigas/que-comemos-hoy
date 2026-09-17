@@ -8,7 +8,7 @@ import { cambiarReceta, completarDia, completarSemana, fijarReceta, recortarHist
 import {
   UNIDADES, categorizar, escalarIngredientes, formatoCantidad, listaDeCompras, porcionesTotales, redondear,
 } from '../js/porciones.js';
-import { busquedaTikTok, normalizarUrlTikTok } from '../js/tiktok.js';
+import { idVideoTikTok, normalizarUrlTikTok, urlReproductorTikTok } from '../js/tiktok.js';
 
 /** Generador pseudoaleatorio con semilla (mulberry32) para pruebas repetibles. */
 function azarConSemilla(semilla) {
@@ -86,7 +86,9 @@ test('enlaces de TikTok', () => {
   assert.equal(normalizarUrlTikTok('https://www.tiktok.com/@chef/video/123'), 'https://www.tiktok.com/@chef/video/123');
   assert.equal(normalizarUrlTikTok('https://tiktok.com.malicioso.com/x'), '');
   assert.equal(normalizarUrlTikTok('javascript:alert(1)'), '');
-  assert.match(busquedaTikTok('Huevos a la mexicana'), /^https:\/\/www\.tiktok\.com\/search\?q=receta%20Huevos/);
+  assert.equal(idVideoTikTok('https://www.tiktok.com/@chef/video/7517772089793842462?lang=es'), '7517772089793842462');
+  assert.equal(idVideoTikTok('https://vm.tiktok.com/ZMabc/'), null);
+  assert.match(urlReproductorTikTok('123'), /^https:\/\/www\.tiktok\.com\/player\/v1\/123\?/);
 });
 
 test('recetas base completas y bien formadas', () => {

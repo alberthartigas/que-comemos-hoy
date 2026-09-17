@@ -101,7 +101,7 @@ Trae 41 recetas mexicanas fáciles y saludables:
 
 - 14 desayunos, 16 comidas y 11 cenas. Algunas sirven para dos momentos del día.
 - Todas se hacen en 40 minutos o menos, con ingredientes de súper o mercado.
-- Cada una tiene un video de TikTok (enlaces verificados en septiembre de 2026) y un botón para buscar más.
+- Cada una tiene un video de TikTok (enlaces verificados en septiembre de 2026) que se reproduce **dentro de la app**, en una hoja que sube desde abajo, con el reproductor oficial de TikTok para desarrolladores (`https://www.tiktok.com/player/v1/<id>`, solo el video con controles, sin pie ni recomendaciones); los enlaces cortos `vm.tiktok.com` los resuelve el servidor (`/api/ia/video-tiktok`). Desde la receta también se buscan otros videos sin salir de la app (necesita la clave de buscador del servidor). No hay enlaces que saquen a la persona de la app, salvo compartir la lista por WhatsApp y descargar una APK nueva.
 
 ## Tus datos
 

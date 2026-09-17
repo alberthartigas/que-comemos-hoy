@@ -7,9 +7,8 @@ import { ICONOS } from '../iconos.js';
 import { escalarIngredientes, porcionesTotales } from '../porciones.js';
 import { recetasParecidas } from '../similares.js';
 import { alternarActiva, guardarReceta, nuevoIdReceta } from '../store.js';
-import { busquedaTikTok } from '../tiktok.js';
 import { autorTikTok, esc, toast } from '../util.js';
-import { abrirSelectorCalendario, accionAgregarA, accionFavorita, botonFavorita, listaMini, mostrarSeccionesIA, regresar, stepperPersonas } from './comun.js';
+import { abrirSelectorCalendario, accionAgregarA, accionFavorita, accionVideo, botonFavorita, listaMini, mostrarSeccionesIA, regresar, stepperPersonas } from './comun.js';
 
 // Adultos y niños solo para esta receta (no cambia los ajustes de la casa).
 let personas = null;
@@ -88,9 +87,10 @@ export function render(ctx) {
     ${avisoDelPlan(ctx.params.get('fecha'), ctx.params.get('tipo'), claveFecha(ctx.ahora))}
 
     <section class="tarjeta">
-      <h2>🎥 Mírala en TikTok</h2>
-      ${receta.tiktok ? `<a class="btn btn--tiktok btn--bloque" href="${esc(receta.tiktok)}" target="_blank" rel="noopener">${ICONOS.play} Ver video${autor ? ` de ${esc(autor)}` : ''}</a>` : ''}
-      <a class="btn btn--bloque" href="${esc(busquedaTikTok(receta.nombre))}" target="_blank" rel="noopener">${ICONOS.buscar} Buscar más videos en TikTok</a>
+      <h2>🎥 Video de la receta</h2>
+      ${receta.tiktok ? `<button class="btn btn--tiktok btn--bloque" type="button" data-accion="video" data-id="${esc(receta.id)}">${ICONOS.play} Ver video${autor ? ` de ${esc(autor)}` : ''}</button>` : '<p class="nota">Esta receta todavía no tiene video.</p>'}
+      <button class="btn btn--bloque" type="button" data-accion="video" data-id="${esc(receta.id)}" data-buscar="1">${ICONOS.buscar} ${receta.tiktok ? 'Buscar otro video' : 'Buscar un video'}</button>
+      <p class="nota">Los videos se ven aquí mismo, sin salir de la app.</p>
     </section>
 
     <section class="tarjeta">
@@ -180,6 +180,7 @@ export const acciones = {
     toast(`¡${guardada.nombre} agregada! Ya entra al sorteo 🎲`);
   },
   favorita: accionFavorita,
+  video: accionVideo,
   mas: (boton, ctx) => cambiarPersonas(boton.dataset.campo, 1, ctx),
   menos: (boton, ctx) => cambiarPersonas(boton.dataset.campo, -1, ctx),
   'agregar-a': accionAgregarA,

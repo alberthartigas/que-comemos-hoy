@@ -1,4 +1,5 @@
-// Enlaces a TikTok: video específico (si la receta tiene uno) o búsqueda del platillo.
+// Enlaces de TikTok: se normalizan al guardar y los videos se reproducen dentro de la app
+// (reproductor oficial para desarrolladores: https://www.tiktok.com/player/v1/<id>, sin pie ni recomendaciones).
 
 /** Acepta enlaces de tiktok.com (incluye vm.tiktok.com) aunque se peguen sin "https://". Si no es válido devuelve ''. */
 export function normalizarUrlTikTok(texto) {
@@ -14,6 +15,8 @@ export function normalizarUrlTikTok(texto) {
   }
 }
 
-export function busquedaTikTok(nombreReceta) {
-  return `https://www.tiktok.com/search?q=${encodeURIComponent(`receta ${nombreReceta} fácil`)}`;
-}
+/** Número de video a partir de un enlace largo (los cortos vm.tiktok.com los resuelve el servidor). */
+export const idVideoTikTok = (url) => /\/video\/(\d+)/.exec(String(url ?? ''))?.[1] ?? null;
+
+/** Reproductor oficial de TikTok para un video: solo el video con controles, sin salir de la app. */
+export const urlReproductorTikTok = (id) => `https://www.tiktok.com/player/v1/${id}?controls=1&rel=0&description=0&music_info=0&native_context_menu=0&closed_caption=0`;

@@ -6,10 +6,10 @@ import { OMITIDA } from '../planner.js';
 import { estadoIA } from '../ia.js';
 import { ICONOS } from '../iconos.js';
 import { alternarActiva, alternarFavorita, obtenerEstado, omitirComida, otraOpcion, usarRecetaEn } from '../store.js';
-import { busquedaTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
 import { abrirElegirReceta } from './elegir-receta-hoja.js';
 import { abrirHoja } from './hoja.js';
+import { abrirVideoReceta } from './video-hoja.js';
 
 const descartadas = new Map(); // "fecha|tipo" → recetas que la persona ya cambió en esta sesión
 let ultimoCambio = { clave: '', hora: 0 };
@@ -17,7 +17,6 @@ let ultimoCambio = { clave: '', hora: 0 };
 export const enlaceReceta = (id, fecha, tipo) =>
   `#/receta/${encodeURIComponent(id)}${fecha ? `?fecha=${fecha}&tipo=${tipo}` : ''}`;
 
-export const enlaceTikTok = (receta) => receta.tiktok || busquedaTikTok(receta.nombre);
 
 /** Botón "Otra opción" (usa data-fecha y data-tipo). */
 export function accionOtraOpcion(boton) {
@@ -224,3 +223,9 @@ export function calendarioSemana({ estado, hoy, lunes, seleccionado, conAgregar 
     </div>
   </div>`;
 }
+
+/** Botón "Video": reproduce el TikTok de la receta dentro de la app. */
+export function botonVideo(receta, clases = 'btn btn--tiktok') {
+  return `<button class="${clases}" type="button" data-accion="video" data-id="${esc(receta.id)}">${ICONOS.play} ${receta.tiktok ? 'Video' : 'Buscar video'}</button>`;
+}
+export const accionVideo = (boton) => abrirVideoReceta(boton.dataset.id, { buscar: boton.dataset.buscar === '1' });

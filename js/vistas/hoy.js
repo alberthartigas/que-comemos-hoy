@@ -5,7 +5,7 @@ import { INFO_TIPO, TIPOS, saludo, tipoSegunHora } from '../horarios.js';
 import { ICONOS } from '../iconos.js';
 import { asegurarSemana } from '../store.js';
 import { esc, textoPersonas } from '../util.js';
-import { accionElegir, accionOmitir, accionOtraOpcion, claseAnimacion, comidasDelDia, enlaceReceta, enlaceTikTok, estaOmitida, filaSlot } from './comun.js';
+import { accionElegir, accionOmitir, accionOtraOpcion, accionVideo, botonVideo, claseAnimacion, comidasDelDia, enlaceReceta, estaOmitida, filaSlot } from './comun.js';
 
 
 export function preparar({ ahora, estado }) {
@@ -40,7 +40,7 @@ function tarjetaPrincipal(receta, momento) {
       <a class="btn btn--primario btn--bloque" href="${enlace}">Ver ingredientes y receta</a>
       <div class="fila-botones">
         <button class="btn" type="button" data-accion="otra" data-fecha="${momento.fecha}" data-tipo="${momento.tipo}">${ICONOS.aleatorio} Otra opción</button>
-        <a class="btn btn--tiktok" href="${esc(enlaceTikTok(receta))}" target="_blank" rel="noopener">${ICONOS.play} TikTok</a>
+        ${botonVideo(receta)}
       </div>
     </div>`;
 }
@@ -97,4 +97,4 @@ export function render({ ahora, estado }) {
     </div>`;
 }
 
-export const acciones = { otra: accionOtraOpcion, omitir: accionOmitir, elegir: accionElegir };
+export const acciones = { otra: accionOtraOpcion, omitir: accionOmitir, elegir: accionElegir, video: accionVideo };

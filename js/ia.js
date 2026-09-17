@@ -43,3 +43,6 @@ export const recetaDesdeNombre = (nombre, tipo = '') => pedir('receta-nombre', {
 
 /** Busca en internet un video de TikTok verificado para ese platillo: { url, titulo, autor } o { url: null }. */
 export const buscarVideoTikTok = (nombre) => pedir('buscar-tiktok', { nombre });
+
+/** Datos de un video de TikTok (id para reproducirlo dentro de la app); resuelve enlaces cortos. */
+export const videoTikTok = (url) => pedir('video-tiktok', { url });

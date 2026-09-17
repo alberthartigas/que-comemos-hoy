@@ -66,7 +66,7 @@ export function abrirHojaRecetaPropia({ fecha, tipo }) {
       usarRecetaEn(fecha, tipo, guardada.id);
       const detalleVideo = video.url
         ? `Video de TikTok de ${esc(video.autor || 'referencia')} agregado.`
-        : 'No encontré un video verificado: el botón TikTok de la receta abre la búsqueda del platillo.';
+        : 'No encontré un video verificado; desde la receta puedes buscar uno cuando quieras.';
       mostrar(`✅ <strong>${esc(guardada.emoji)} ${esc(guardada.nombre)}</strong> ya está en ${esc(cuando)}: ${guardada.ingredientes.length} ingredientes y ${guardada.pasos.length} pasos. ${detalleVideo}`);
       const final = form.querySelector('[data-final]');
       final.hidden = false;

@@ -6,7 +6,7 @@ import { ICONOS } from '../iconos.js';
 import { UNIDADES } from '../porciones.js';
 import { ETIQUETAS } from '../recetas.js';
 import { eliminarReceta, guardarReceta, nuevoIdReceta } from '../store.js';
-import { busquedaTikTok, normalizarUrlTikTok } from '../tiktok.js';
+import { normalizarUrlTikTok } from '../tiktok.js';
 import { esc, toast } from '../util.js';
 import { mostrarSeccionesIA, regresar } from './comun.js';
 
@@ -87,7 +87,7 @@ export function render(ctx) {
 
       <label class="campo">
         <span class="campo__titulo">Nombre del platillo</span>
-        <input class="entrada" name="nombre" maxlength="80" value="${esc(receta.nombre)}" placeholder="Ej. Tacos de frijol con nopales" autocomplete="off" data-entrada="nombre">
+        <input class="entrada" name="nombre" maxlength="80" value="${esc(receta.nombre)}" placeholder="Ej. Tacos de frijol con nopales" autocomplete="off">
       </label>
 
       <div class="campo">
@@ -126,8 +126,7 @@ export function render(ctx) {
       <div class="campo">
         <label class="campo__titulo" for="campo-tiktok">Video de TikTok (opcional)</label>
         <input class="entrada" id="campo-tiktok" name="tiktok" inputmode="url" value="${esc(receta.tiktok)}" placeholder="https://www.tiktok.com/@.../video/..." autocomplete="off">
-        <small>En TikTok toca Compartir → Copiar enlace y pégalo aquí.</small>
-        <a class="btn btn--texto" data-buscar-tiktok href="${esc(busquedaTikTok(receta.nombre || 'saludable'))}" target="_blank" rel="noopener">${ICONOS.buscar} Buscar un video en TikTok</a>
+        <small>En TikTok toca Compartir → Copiar enlace y pégalo aquí; el video se verá dentro de la app. También puedes buscarlo después desde la receta.</small>
       </div>
 
       <fieldset class="campo">
@@ -195,13 +194,6 @@ export const acciones = {
     eliminarReceta(receta.id);
     toast('Receta eliminada');
     ctx.navegar('#/recetas', { reemplazar: true });
-  },
-};
-
-export const entradas = {
-  nombre(campo) {
-    const enlace = campo.form.querySelector('[data-buscar-tiktok]');
-    enlace.href = busquedaTikTok(campo.value.trim() || 'saludable');
   },
 };
 
